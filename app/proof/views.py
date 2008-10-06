@@ -16,12 +16,12 @@ def proof_start(request):
     goal_term = pt(str(goal_text))
     goal_seq = sequent.Sequent([], [goal_term])
 
-    plan = Plan()
-    plan.text = prv.assumption().normalize(goal_seq).pretty_repr(env.printer)
-    plan.save()
+    p = Plan()
+    p.text = plan.assumption().normalize(goal_seq).pretty_repr(env.printer)
+    p.save()
     
     proof = Proof()
-    proof.plan = plan
+    proof.plan = p
     proof.goal = prt(goal_term)
     proof.save()
 
@@ -46,12 +46,12 @@ class Walker:
                 'sequent': pr(sequent)}
         if isinstance(p, plan.Assumption):
             line['assumption'] = True
-            line['rules'] = prv.applicable_rules(p, sequent)
+            line['rules'] = prv.env.applicable_rules(sequent)
         self.lines.append(line)
 
 def proof_detail(request, proof_id):
     proof = Proof.objects.get(id=proof_id)
-    proof_plan = prv.evaluate(str(proof.plan.text))
+    proof_plan = prv.env.evaluate(str(proof.plan.text))
     proof_goal = sequent.Sequent([], [pt(str(proof.goal))])
     walker = Walker()
     plan.trace(proof_plan, proof_goal, walker)
@@ -68,7 +68,7 @@ def proof_detail(request, proof_id):
 def proof_advance(request, proof_id):
     assert request.method == 'POST'
     proof = Proof.objects.get(id=proof_id)
-    proof_plan = prv.evaluate(str(proof.plan.text))
+    proof_plan = prv.env.evaluate(str(proof.plan.text))
     proof_goal = sequent.Sequent([], [pt(str(proof.goal))])
     
     rule = str(request.POST['apply_rule'])
@@ -98,7 +98,7 @@ def proof_advance(request, proof_id):
         else:
             code = '%s(%s)' % (rule, kwargs.values()[0])
 
-        node = prv.evaluate(code)
+        node = prv.env.evaluate(code)
         proof_plan = proof_plan.replace(proof_plan.assumptions()[assumption_index], node)
         proof.plan.text = proof_plan.normalize(proof_goal).pretty_repr(env.printer)
         proof.plan.save()
@@ -172,7 +172,7 @@ def real_prover(request):
     error = ''
     prf = None
     if 'proof' in request.session:
-        prf = prv.evaluate(str(request.session['proof']))
+        prf = prv.env.evaluate(str(request.session['proof']))
     goal = None
     if 'goal' in request.session:
         goal = pt(str(request.session['goal']))
@@ -212,7 +212,7 @@ def real_prover(request):
                 else:
                     code = '%s(%s)' % (rule, kwargs.values()[0])
 
-                node = prv.evaluate(code)
+                node = prv.env.evaluate(code)
                 prf = prf.replace(prf.assumptions()[0], node).normalize(goal_seq)
             except Exception, e:
                 error = str(e)
@@ -220,7 +220,7 @@ def real_prover(request):
     rules = []
     goals = []
     if prf is not None:
-        rules = prv.applicable_rules(prf, goal_seq)
+        rules = prv.env.applicable_rules(goal_seq)
         try:
             for gl in prf.subgoals(goal_seq):
                 ppseq = {'left':[], 'right':[]}

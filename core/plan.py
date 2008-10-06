@@ -246,3 +246,17 @@ def compress(proof):
         limb.append(node)
 
     return limb
+
+assumption = Assumption
+branch = Branch
+
+def pair(first, second):
+    return branch(first, second)
+
+def sequence(*seq):
+    if len(seq) == 0:
+        raise 'sequence error: nothing to do.'
+    if len(seq) == 1:
+        return seq[0]
+    return pair(seq[0], sequence(*seq[1:]))
+

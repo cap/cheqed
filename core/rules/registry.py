@@ -1,7 +1,7 @@
 import inspect
 
 from cheqed.core.plan import Compound, Rule
-from cheqed.core.rules.match import match_first
+#from cheqed.core.rules.match import match_first
 
 rules = []
 
@@ -10,6 +10,8 @@ def register(func):
 
     if not hasattr(func, 'arg_names'):
         func.arg_names = arg_names
+
+    func.is_registered = True
     
     rules.append(func)
     return func
@@ -17,7 +19,7 @@ def register(func):
 def applicable(side, pattern):
     def is_applicable(sequent):
         try:
-            match_first(sequent, side, pattern)
+#            match_first(sequent, side, pattern)
             return True
         except:
             return False
