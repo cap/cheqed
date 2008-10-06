@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Proof</h1>
+
+<form method="post">
+    <h2>Modify Existing Proof</h2>
+    {% for proof in proofs reversed %}
+    <input type="checkbox" name="index" value="{{proof.id}}"/>
+    <a href="{{proof.id}}/">{{proof.sexp}}</a>
+    <br/>
+    {% endfor %}
+
+    <input type="submit" name="delete" value="Delete"/>
+</form>
+
+{% endblock %}

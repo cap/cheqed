@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Formula</h1>
+
+<form method="post">
+    <h2>Add New Formula</h2>
+    <textarea rows=4 cols=64 name="formula"></textarea>
+    <br/>
+    Tags: <input type="text" name="tags"/>
+    <br/>
+    <input type="submit" name="add" value="Add"/>
+</form>
+
+<br/>
+
+<form method="post">
+    <h2>Modify Existing Formula</h2>
+    {% for formula in formulas reversed %}
+    <input type="checkbox" name="index" value="{{formula.id}}"/>
+    {{formula.sexp}}
+    <br/>
+    {% endfor %}
+
+    <input type="submit" name="delete" value="Delete"/>
+</form>
+
+{% endblock %}

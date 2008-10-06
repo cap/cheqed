@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Start a new proof</h2>
+<form method="post" action="{% url proof.views.proof_start %}">
+  <p>
+    <textarea rows="4" cols="80" name="goal"></textarea>
+  </p>
+  <p>
+    <input type="submit" value="Start"/>
+  </p>
+</form>
+
+{% if proofs %}
+  <h2>View an existing proof</h2>
+  <ul>
+    {% for proof in proofs %}
+      <li>
+        <a href="{% url proof.views.proof_detail proof.id %}">
+          {{ proof.goal }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<h2>Add a new definition</h2>
+<form method="post" action="">
+  <p>
+    <textarea>Enter the definition here.</textarea>
+  </p>
+  <p>
+    <input type="submit" value="Add"/>
+  </p>
+</form>
+
+{% if definitions %}
+  <h2>Existing definitions</h2>
+  <ol>
+    {% for definition in definitions %}
+      {{ definition.text }}
+    {% endfor %}
+  </ol>
+{% endif %}
+
+{% endblock %}

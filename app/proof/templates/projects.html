@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Projects</h1>
+
+{% if projects %}
+<ol>
+  {% for project in projects %}
+  <li>
+    <a href="{% url proof.views.project_detail project.id %}">
+      {{ project.name }}
+    </a>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{% endblock %}

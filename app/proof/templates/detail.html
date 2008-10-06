@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load sequent %}
+
+{% block content %}
+<table class="proof">
+    <thead>
+        <tr>
+            <td class="rule-col">Rule</td>
+            <td class="seq-col">Left</td>
+            <td class="seq-col">Right</td>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for line in proof %}
+        <tr 
+            {% ifequal line.rule.name "Hypothesis" %}
+            class="hypothesis"
+            {% endifequal %}
+            >
+            <td class="rule-col">{{ line.rule.name }}</td>
+            <td class="seq-col">
+                {% if line.bottom.sequents %}
+                <table class="sequent">
+                    {% for g in line.bottom.sequents %}
+                    {% for f in g.left %}
+                    {% ifequal line.rule.name "Hypothesis" %}
+                    {% sequent_line forloop.parentloop.parentloop.counter0 "left" forloop.counter0 %}
+                    {% else %}
+                    {% ifequal forloop.counter0 0 %}
+                    {% if line.rule.side.includes_left %}
+                    {% sequent_line forloop.parentloop.parentloop.counter0 "left" forloop.counter0 %}
+                    {% endif %}
+                    {% else %}
+                    {% endifequal %}
+                    {% endifequal %}
+
+
+                    {% endfor %}
+                    {% endfor %}
+                </table>
+                {% endif %}
+            </td>
+            <td class="seq-col">
+                {% if line.bottom.sequents %}
+                <table class="sequent">
+                    {% for g in line.bottom.sequents %}
+                    {% for f in g.right %}
+
+                    {% ifequal line.rule.name "Hypothesis" %}
+                    {% sequent_line forloop.parentloop.parentloop.counter0 "right" forloop.counter0 %}
+                    {% else %}
+                    {% ifequal forloop.counter0 0 %}
+                    {% if line.rule.side.includes_right %}
+                    {% sequent_line forloop.parentloop.parentloop.counter0 "right" forloop.counter0 %}
+                    {% endif %}
+                    {% else %}
+                    {% endifequal %}
+                    {% endifequal %}
+
+                    {% endfor %}
+                    {% endfor %}
+                </table>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

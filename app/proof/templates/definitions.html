@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Axioms</h1>
+
+{% if axioms %}
+<table>
+    <thead>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Axiom</b></td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, axiom in axioms %}
+        <tr>
+            <td>{{name}}</td>
+            <td>{{axiom}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<h1>Definitions</h1>
+
+{% if definitions %}
+<table>
+    <thead>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Definition</b></td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, definition in definitions %}
+        <tr>
+            <td>{{name}}</td>
+            <td>{{definition}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+
+
+{% endblock %}

@@ -1,0 +1,19 @@
+<tr>
+    <td class="index-col">{{ sequent_line }}</td>
+    <td class="form-col">{{ formula }}</td>
+    <td class="rule-col">
+        {% for rule in rules %}
+        <form action="/proof/{{idea_id}}/" method="get">
+            <input type="hidden" name="proof_line" value="{{proof_line}}"/>
+            <input type="hidden" name="sequent_side" value="{{sequent_side}}"/>
+            <input type="hidden" name="sequent_line" value="{{sequent_line}}"/>
+            <input type="hidden" name="rule_index" 
+                   value="{{forloop.counter0}}"/>
+            {% if rule.requires_witness %}
+            <input type="text" name="witness"/>
+            {% endif %}
+            <input type="submit" value="{{ rule.name }}"/>
+        </form>
+        {% endfor %}
+    </td>
+</td>

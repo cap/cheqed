@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Prover</h1>
+
+<h2>Goals</h2>
+{% if goals %}
+{% for goal in goals %}
+<table>
+    <tr>
+        <td>Left</td>
+        <td>Right</td>
+    </tr>
+    <tr>
+        <td>
+            {% if goal.left %}
+            <ol>
+                {% for term in goal.left %}
+                <li>{{term.pretty}}</li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </td>
+        <td>
+            {% if goal.right %}
+            <ol>
+                {% for term in goal.right %}
+                <li>{{term.pretty}}</li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </td>
+    </tr>
+</table>
+{% endfor %}
+{% endif %}
+
+<form method="post">
+    <input type="text" name="goal"/>
+    <input type="submit" name="start_over" value="Start Over"/>
+</form>
+
+{% if error %}
+<h2>Error</h2>
+{{error}}
+{% endif %}
+
+<h2>Rules</h2>
+<form method="post">
+    {% for name, args in rules %}
+    <input type="submit" name="apply_rule" value="{{name}}"/>
+    {% for arg in args %}
+    <input type="text" name="{{name}}_{{arg}}"/>
+    {% endfor %}
+    <br/>
+    {% endfor %}
+</form>
+
+<h2>Proof</h2>
+{% for line in tree_view %}
+{% ifequal line "begin_branch" %}
+  <div class="proof_branch">
+{% else %}
+  {% ifequal line "end_branch" %}
+    </div>
+  {% else %}
+    <div class="proof_step {% cycle 'zebra_0' 'zebra_1' %} {% if line.assumption %}proof_assumption{% endif %}">
+      <div class="proof_sequent">
+        {{line.sequent}}
+      </div>
+      {% if line.assumption %}
+        <form method="post">
+          {% for name, args in rules %}
+          <input type="submit" name="apply_rule" value="{{name}}"/>
+          {% for arg in args %}
+          <input type="text" name="{{name}}_{{arg}}"/>
+          {% endfor %}
+          <br/>
+          {% endfor %}
+        </form>
+      {% else %}
+        {{line.plan}}
+      {% endif %}
+
+
+    </div>
+  {% endifequal %}
+{% endifequal %}
+{% endfor %}
+
+{% endblock %}

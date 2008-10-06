@@ -1,0 +1,129 @@
+body { background-color: #556b2f;
+       margin: 0}
+
+/* 
+olive colors:
+#caff70
+#bcee68
+#a2cd5a
+#6e8b3d
+#556b2f
+*/
+
+.header 
+{ 
+  margin: 0;
+  padding: 0;
+  padding-left: 10px;
+  background-color: #caff70;
+  border-bottom: 1px solid #6e8b3d;
+  border-top: 1px solid #caff70;
+}
+
+.toolbar 
+{ 
+  margin: 0;
+  padding: 5px;
+  padding-left: 10px;
+  background-color: #bcee68;
+  border-bottom: 2px solid #6e8b3d;
+}
+
+.container 
+{ 
+  margin-top: 0px;
+  padding: 10px;
+  background-color: white; 
+}
+
+.content 
+{ 
+  padding:5px;
+}
+
+.proof
+{ 
+  border: 1px solid black;
+  border-collapse: collapse;
+  width: 100%;
+  background-color: white;
+}
+
+.proof thead 
+{ 
+  font-weight: bold; 
+  background-color: white;
+}
+
+.proof tr 
+{ 
+  border: 1px solid black; 
+}
+
+.hypothesis
+{ 
+  background-color: #ffec8b;
+}
+
+.rule-col
+{ 
+  width: 100px;
+}
+
+.form-col
+{ 
+  width: 250px;
+}
+
+.index-col
+{ 
+  width: 10px;
+}
+
+a:link { color: black;
+         text-decoration: none; }
+a:visited { color: black; 
+            text-decoration: none; }
+a:hover { color: green; 
+          text-decoration: underline; }
+
+form
+{ 
+  margin: 0;
+}
+
+input 
+{ 
+  margin: 0;
+}
+
+.proof_branch
+{
+  padding-left: 20px;
+  border-bottom: 1px solid black;
+  border-left: 1px solid black;
+}
+
+.proof_step
+{
+}
+
+.zebra_0
+{
+  background-color: #FCF6CF;
+}
+
+.zebra_1
+{
+  background-color: #FDFCDC;
+}
+
+.zebra_0.proof_assumption
+{
+  background-color: #AAFFAA;
+}
+
+.zebra_1.proof_assumption
+{
+  background-color: #CCFFCC;
+}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Sequent</h1>
+
+<form action="/sequent/{{id}}/" method="post">
+    <h2>Add Formula</h2>
+    {% for formula in formulas reversed %}
+    <label>
+        <input type="checkbox" name="index" value="{{formula.id}}"/>
+        {{formula.sexp}}
+    </label>
+    <br/>
+    {% endfor %}
+
+    <input type="submit" name="add" value="Left"/>
+    <input type="submit" name="add" value="Right"/>
+</form>
+
+<form action="/sequent/{{id}}/" method="post">
+    <h2>Modify Sequent</h2>
+    <table class="proof">
+        <thead>
+            <tr>
+                <td>Left</td>
+                <td>Right</td>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>
+                    {% for formula in sequent.left %}
+                    <label>
+                        <input type="checkbox" 
+                               name="left" 
+                               value="{{forloop.counter0}}"/>
+                        {{ formula }}
+                    </label>
+                    <br/>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for formula in sequent.right %}
+                    <label>
+                        <input type="checkbox" 
+                               name="right" 
+                               value="{{forloop.counter0}}"/>
+                        {{ formula }}
+                    </label>
+                    <br/>
+                    {% endfor %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>
+        <input type="submit" name="delete" value="Delete"/>
+        <input type="submit" name="prove" value="Prove"/>
+    </p>
+</form>
+
+{% endblock %}

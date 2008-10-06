@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Rules</h1>
+
+{% if rules %}
+<table>
+    <thead>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Description</b></td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, doc in rules %}
+        <tr>
+            <td>{{name}}</td>
+            <td>{{doc}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% endblock %}

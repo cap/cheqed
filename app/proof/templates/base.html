@@ -1,0 +1,24 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>Proof</title>
+<link rel="stylesheet" href="/media/index.css" type="text/css"/>
+</head>
+
+<body>
+<div class="header">
+    <h1><a href="/">CheQED</a></h1>
+</div>
+
+<div class="toolbar">
+  <a href="{% url proof.views.index %}">Proofs</a> . 
+    <a href="/parser/">Parser</a> .
+</div>
+
+<div class="container">
+    <div class="content">
+        {% block content %}Content!{% endblock %}
+    </div>
+</div>
+</body>
+</html>

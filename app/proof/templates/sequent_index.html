@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Sequent</h1>
+
+<form method="post">
+    <h2>Add New Sequent</h2>
+    <input type="submit" name="add" value="Add"/>
+</form>
+
+<form method="post">
+    <h2>Modify Existing Sequent</h2>
+    {% for sequent in sequents reversed %}
+    <input type="checkbox" name="index" value="{{sequent.id}}"/>
+    <a href="{{sequent.id}}/">{{sequent.sexp}}</a>
+    <br/>
+    {% endfor %}
+
+    <input type="submit" name="delete" value="Delete"/>
+</form>
+
+{% endblock %}
