@@ -17,9 +17,9 @@ def register(func):
     return func
 
 def applicable(side, pattern):
-    def is_applicable(sequent):
+    def is_applicable(environment, sequent):
         try:
-#            match_first(sequent, side, pattern)
+            environment.match_first(sequent, side, pattern)
             return True
         except:
             return False

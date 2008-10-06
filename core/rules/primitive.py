@@ -1,7 +1,7 @@
 from cheqed.core import qterm, unification
 from cheqed.core.sequent import Sequent
 from cheqed.core.rules.match import match_first, match_second
-    
+
 # helper functions
 def permute(list_, index):
     return [list_[index]] + list_[:index] + list_[index + 1:]

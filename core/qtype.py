@@ -106,8 +106,9 @@ class QTypeVariable(object):
 class QType(object):
     _arity = {
         'obj': 0,
-        'class': 0,
         'bool': 0,
+        'int': 0,
+        'unit': 0,
         'fun': 2,
         }
 
@@ -155,7 +156,7 @@ class QType(object):
     def __repr__(self):
         if self.name == 'fun':
             return '(%s->%s)' % (str(self.args[0]), str(self.args[1]))
-        elif self.name in ['obj', 'bool', 'class']:
+        elif self.name in ['obj', 'bool', 'int', 'unit']:
             return self.name
         else:
             return NotImplemented
@@ -182,6 +183,12 @@ def qobj():
 
 def qbool():
     return QType('bool', [])
+
+def qunit():
+    return QType('unit', [])
+
+def qint():
+    return QType('int', [])
 
 def qfun(a, b):
     return QType('fun', [a, b])
