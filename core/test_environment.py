@@ -1,5 +1,7 @@
+from nose.tools import assert_true, assert_equal
+
 from cheqed.core import qterm, qtype
-from cheqed.core.environment import _load, _load_single
+from cheqed.core.environment import _load, _load_single, Environment
 
 test_module = r'''
 constant('=:?a->?a->bool')
@@ -11,25 +13,9 @@ definition(r'(foo) = (\x bar(x))')
 axiom('foo_property', r'foo x = x')
 '''
 
-def check_configuration_lens(configuration):
-    assert len(configuration.constants) == 2
-    assert len(configuration.definitions) == 1
-    assert len(configuration.operators) == 2
-
-def test__load_single():
-    # Load and verify two configurations in a row to make sure loads
-    # are independent.
-    for i in range(2):
-        check_configuration_lens(_load_single(test_module))
-
-def test__load():
-    # Load and verify two configurations in a row to make sure loads
-    # are independent.
-    for i in range(2):
-        check_configuration_lens(_load([test_module]))
         
 def test_load():
-    environment = _load([test_module]).make_environment()
+    environment = _load([test_module])
 
     foo = qterm.Constant('foo', qtype.qfun(qtype.qbool(), qtype.qbool()))
     bar = qterm.Variable('bar', qtype.qfun(qtype.qbool(), qtype.qbool()))
@@ -40,3 +26,15 @@ def test_load():
     
     assert environment.constants['foo'] == foo
     assert environment.definitions['foo'] == definition
+
+
+def test_load_rules():
+    rules = '''
+@primitive
+def prim(goal):
+    pass
+'''
+    env = Environment()
+    env.load_rules(rules)
+    prim = env.rules['prim']
+    assert_true(prim.is_primitive)

@@ -55,7 +55,7 @@ def test_equality_match():
     
     
 class TestConstant:
-    def setup_method(self, method):
+    def setup(self):
         self.cls = qterm.Constant
         
     def test_qtype(self):
@@ -90,7 +90,7 @@ class TestConstant:
         raises(qtype.UnificationError, x_var.unify, x_bool)
 
 class TestVariable:
-    def setup_method(self, method):
+    def setup(self):
         self.cls = qterm.Variable
 
         self.x_obj = self.cls('x', pq('obj'))

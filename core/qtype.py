@@ -108,6 +108,7 @@ class QType(object):
         'obj': 0,
         'bool': 0,
         'int': 0,
+        'sequent': 0,
         'unit': 0,
         'fun': 2,
         }
@@ -156,7 +157,7 @@ class QType(object):
     def __repr__(self):
         if self.name == 'fun':
             return '(%s->%s)' % (str(self.args[0]), str(self.args[1]))
-        elif self.name in ['obj', 'bool', 'int', 'unit']:
+        elif self.name in ['obj', 'bool', 'int', 'unit', 'sequent']:
             return self.name
         else:
             return NotImplemented
@@ -189,6 +190,9 @@ def qunit():
 
 def qint():
     return QType('int', [])
+
+def qsequent():
+    return QType('sequent', [])
 
 def qfun(a, b):
     return QType('fun', [a, b])

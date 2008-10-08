@@ -3,7 +3,13 @@ import os.path
 from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, plan
 from cheqed.core.rules.registry import register, make_compound, applicable
 
-class Configuration(object):
+def arg_types(*args):
+    def assign_types(rule):
+        rule.arg_types = args
+        return rule
+    return assign_types
+
+class Environment:
     def __init__(self):
         self.constants = {}
         self.definitions = {}
@@ -13,6 +19,19 @@ class Configuration(object):
         self.types = []
         self.parser = None
         self.printer = None
+
+        self.rules = {}
+        self.rule_helpers = {
+            'primitive': self.primitive,
+            'compound': self.compound,
+            'arg_types': arg_types,
+            'match': self.match_first,
+            }
+
+        self.plans = {}
+        self.plans['assumption'] = plan.assumption
+        self.plans['branch'] = plan.branch
+        self.plans['parse'] = self.parse
 
     def add_type(self, type_):
         self.types.append(type_)
@@ -54,37 +73,28 @@ class Configuration(object):
         extensions = self.types + self.operators + self.binders
         self.printer = printer.Printer(syntax.Syntax(extensions))
         
-    def update(self, other):
-        self.constants.extend(other.constants)
-        self.definitions.extend(other.definitions)
-        self.axioms.update(other.axioms)
-        self.operators.extend(other.operators)
-        self.binders.extend(other.binders)
-        
-    def make_environment(self):
-        self.make_parser()
-        self.make_printer()
-        
-        return Environment(self.parser, self.printer,
-                           self.constants, self.definitions, self.axioms)
 
-    
-class Environment(object):
-    def __init__(self, parser, printer, constants, definitions, axioms):
-        self.parser = parser
-        self.printer = printer
-        self.constants = constants
-        self.definitions = definitions
-        self.axioms = axioms
-        self.plans = {}
-        
-        self.plans['assumption'] = plan.assumption
-        self.plans['branch'] = plan.branch
-        self.plans['parse'] = self.parser.parse
 
-    def set_up(self):
-        self.load_plan('rules.structural')
-        self.load_plan('rules.logical')
+        
+    def parse(self, string):
+        return self.parser.parse(string)
+        
+    def primitive(self, rule):
+        rule.is_primitive = True
+        self.rules[rule.func_name] = rule
+        return rule
+
+    def compound(self, rule):
+        rule.is_compound = True
+        self.rules[rule.func_name] = rule
+        return rule
+        
+    def load_rules(self, rules):
+        scope = globals().copy()
+        scope.update(self.rule_helpers)
+        scope.update(self.rules)
+        exec rules in scope
+
         
 #        self.register(self.left_expand)
 #        self.register(self.right_expand)
@@ -205,13 +215,12 @@ def _load_single(conf, expr):
     scope.update(globals())    
 
     exec expr in scope
+    return conf
 
 def _load(expr):
-    conf = Configuration()
+    conf = Environment()
     conf.add_type(syntax.Type(qtype.qobj, 'obj'))
     conf.add_type(syntax.Type(qtype.qbool, 'bool'))
-    conf.add_type(syntax.Type(qtype.qunit, 'unit'))
-    conf.add_type(syntax.Type(qtype.qint, 'int'))
     conf.make_parser()
     
     for module in expr:
@@ -220,14 +229,10 @@ def _load(expr):
     return conf
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
-_cache = {}
 def load_modules(*modules):
-    if modules in _cache:
-        return _cache[modules]
-    
     files = [open(os.path.join(theory_root, '%s.py' % module))
              for module in modules]
-    conf = _load(files)
-    env = conf.make_environment()
-    _cache[modules] = env
+    env = _load(files)
+    env.make_parser()
+    env.make_printer()
     return env
