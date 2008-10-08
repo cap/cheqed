@@ -1,7 +1,6 @@
 import os.path
 
 from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, plan
-from cheqed.core.rules.registry import register, make_compound, applicable
 
 def arg_types(*args):
     def assign_types(rule):
@@ -21,11 +20,18 @@ class Environment:
         self.printer = None
 
         self.rules = {}
-        self.rule_helpers = {
-            'primitive': self.primitive,
-            'compound': self.compound,
+        self.helpers = {
             'arg_types': arg_types,
             'match': self.match_first,
+
+            'primitive': self.add_primitive,
+            'compound': self.add_compound,
+
+            'constant': self.add_constant,
+            'axiom': self.add_axiom,
+            'definition': self.add_definition,
+            'operator': self.add_operator,
+            'binder': self.add_binder,
             }
 
         self.plans = {}
@@ -79,22 +85,21 @@ class Environment:
     def parse(self, string):
         return self.parser.parse(string)
         
-    def primitive(self, rule):
+    def add_primitive(self, rule):
         rule.is_primitive = True
         self.rules[rule.func_name] = rule
         return rule
 
-    def compound(self, rule):
+    def add_compound(self, rule):
         rule.is_compound = True
         self.rules[rule.func_name] = rule
         return rule
         
-    def load_rules(self, rules):
+    def load_extension(self, extension):
         scope = globals().copy()
-        scope.update(self.rule_helpers)
+        scope.update(self.helpers)
         scope.update(self.rules)
-        exec rules in scope
-
+        exec extension in scope
         
 #        self.register(self.left_expand)
 #        self.register(self.right_expand)
@@ -204,35 +209,20 @@ def _right_expand(sequent, definition):
 
     
 
-def _load_single(conf, expr):
-    scope = {
-        'constant': conf.add_constant,
-        'axiom': conf.add_axiom,
-        'definition': conf.add_definition,
-        'operator': conf.add_operator,
-        'binder': conf.add_binder,
-        }
-    scope.update(globals())    
-
-    exec expr in scope
-    return conf
-
-def _load(expr):
-    conf = Environment()
-    conf.add_type(syntax.Type(qtype.qobj, 'obj'))
-    conf.add_type(syntax.Type(qtype.qbool, 'bool'))
-    conf.make_parser()
-    
-    for module in expr:
-        _load_single(conf, module)
-        conf.make_parser()
-    return conf
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
 def load_modules(*modules):
-    files = [open(os.path.join(theory_root, '%s.py' % module))
-             for module in modules]
-    env = _load(files)
+    env = Environment()
+    env.add_type(syntax.Type(qtype.qobj, 'obj'))
+    env.add_type(syntax.Type(qtype.qbool, 'bool'))
     env.make_parser()
+
+    extensions = [open(os.path.join(theory_root, '%s.py' % module))
+                  for module in modules]
+
+    for extension in extensions:
+        env.load_extension(extension)
+        env.make_parser()
+
     env.make_printer()
     return env
