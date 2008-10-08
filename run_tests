@@ -1,0 +1,3 @@
+nosetests /home/cap/thesis/cheqed/core
+cd /home/cap/thesis/cheqed/ && ctags-exuberant -eR --languages=Python . --totals=yes
+# pylint --rcfile=/home/cap/thesis/cheqed/pylint.rc /home/cap/thesis/cheqed/core
