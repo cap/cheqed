@@ -1,4 +1,4 @@
-from cheqed.core import qtype, qterm, unification
+from cheqed.core import qtype, qterm, unification, trace
 
 class Printer(object):
     def __init__(self, syntax):

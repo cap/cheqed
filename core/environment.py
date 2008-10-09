@@ -1,6 +1,7 @@
 import os.path
 
 from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, plan
+from cheqed.core import trace
 
 def arg_types(*args):
     def assign_types(rule):
@@ -22,10 +23,14 @@ class Environment:
         self.rules = {}
         self.helpers = {
             'arg_types': arg_types,
-            'match': self.match_first,
+            'match': self.match,
 
+            'sequent': sequent.Sequent,
+            
             'primitive': self.add_primitive,
             'compound': self.add_compound,
+            'branch': trace.branch,
+            'sequence': trace.sequence,
 
             'constant': self.add_constant,
             'axiom': self.add_axiom,
@@ -34,6 +39,9 @@ class Environment:
             'binder': self.add_binder,
             }
 
+        self.add_primitive(self.left_expand)
+        self.add_primitive(self.right_expand)
+        
         self.plans = {}
         self.plans['assumption'] = plan.assumption
         self.plans['branch'] = plan.branch
@@ -41,10 +49,10 @@ class Environment:
 
     def add_type(self, type_):
         self.types.append(type_)
-        self.make_parser()
+        self.parser = None
 
     def add_constant(self, constant):
-        atom = self.parser.parse(constant)
+        atom = self.parse(constant)
         if atom.is_variable:
             atom = qterm.Constant(atom.name, atom.qtype)
         self.constants[atom.name] = atom
@@ -52,14 +60,14 @@ class Environment:
     def add_operator(self, name, arity, associativity, precedence):
         self.operators.append(
             syntax.Operator(self.constants[name], arity, associativity, precedence))
-        self.make_parser()
+        self.parser = None
 
     def add_binder(self, name):
         self.binders.append(syntax.Binder(self.constants[name]))
-        self.make_parser()
+        self.parser = None
 
     def add_definition(self, string):
-        term = self.parser.parse(string)
+        term = self.parse(string)
         assert term.is_combination
         assert term.operator.is_combination
         assert term.operator.operator.name == '='
@@ -69,42 +77,81 @@ class Environment:
         self.definitions[name] = term
 
     def add_axiom(self, name, string):
-        self.axioms[name] = self.parser.parse(string)
-        
-    def make_parser(self):
-        extensions = self.types + self.operators + self.binders
-        self.parser = parser.Parser(syntax.Syntax(extensions))
+        self.axioms[name] = self.parse(string)
 
-    def make_printer(self):
-        extensions = self.types + self.operators + self.binders
-        self.printer = printer.Printer(syntax.Syntax(extensions))
+    def parse_arg(self, arg_type, arg):
+        if arg_type == 'int':
+            return int(arg)
+        elif arg_type == 'str':
+            return str(arg)
+        elif arg_type == 'term':
+            return self.parse(arg)
+        else:
+            raise Exception('unrecognized arg_type')
         
+    def parse_args(self, rule, args):
+        try:
+            return [self.parse_arg(t, a) for t, a in zip(rule.arg_types, args)]
+        except AttributeError:
+            pass
+        return args
 
+    def print_arg(self, arg_type, arg):
+        if arg_type == 'int':
+            return str(arg)
+        elif arg_type == 'str':
+            return repr(arg)
+        elif arg_type == 'term':
+            return repr(self.printer.term(arg))
+        else:
+            raise Exception('unrecognized arg_type')
 
+    def print_args(self, rule, args):
+        try:
+            return [self.print_arg(t, a) for t, a in zip(rule.arg_types, args)]
+        except AttributeError:
+            pass
+        return args
         
-    def parse(self, string):
-        return self.parser.parse(string)
-        
+    def print_proof(self, proof):
+        if isinstance(proof, (trace.Primitive, trace.Compound)):
+            args = self.print_args(proof.func, proof.args)
+            return '%s(%s)' % (proof.func.func_name,
+                               ', '.join(args))
+        elif isinstance(proof, trace.Branch):
+            branches = [self.print_proof(branch) for branch in proof.branches]
+            return 'branch(%s, %s)' % (self.print_proof(proof.rule),
+                                       ', '.join(branches))
+        else:
+            raise Exception('unrecognized arg_type')
+
+    def _make_primitive(self, rule):
+        def _make(*args):
+            args = self.parse_args(rule, args)
+            return trace.Primitive(rule, *args)
+        return _make
+    
     def add_primitive(self, rule):
-        rule.is_primitive = True
-        self.rules[rule.func_name] = rule
-        return rule
+        make = self._make_primitive(rule)
+        self.rules[rule.func_name] = make
+        return make
+
+    def _make_compound(self, rule):
+        def _make(*args):
+            args = self.parse_args(rule, args)
+            return trace.Compound(rule, *args)
+        return _make
 
     def add_compound(self, rule):
-        rule.is_compound = True
-        self.rules[rule.func_name] = rule
-        return rule
-        
+        make = self._make_compound(rule)
+        self.rules[rule.func_name] = make
+        return make
+
     def load_extension(self, extension):
         scope = globals().copy()
         scope.update(self.helpers)
         scope.update(self.rules)
         exec extension in scope
-        
-#        self.register(self.left_expand)
-#        self.register(self.right_expand)
-#        self.register(self.theorem)
-#        self.register(self.theorem_cut)
 
     def load_plan(self, plan):
         mod = __import__(plan)
@@ -118,6 +165,19 @@ class Environment:
                     self.plans[rule.func_name] = rule
             except AttributeError:
                 pass
+
+    def make_parser(self):
+        extensions = self.types + self.operators + self.binders
+        self.parser = parser.Parser(syntax.Syntax(extensions))
+
+    def make_printer(self):
+        extensions = self.types + self.operators + self.binders
+        self.printer = printer.Printer(syntax.Syntax(extensions))
+
+    def parse(self, string):
+        if self.parser is None:
+            self.make_parser()
+        return self.parser.parse(string)
 
     def is_applicable(self, func, goal):
         if hasattr(func, 'is_applicable'):
@@ -143,39 +203,30 @@ class Environment:
                 applicable.append((func.func_name, func.arg_names))
 
         return applicable
-            
+
     def evaluate(self, text):
         return eval(text, globals(), self.plans)
 
-    @staticmethod
-    def decorate(plan):
-        arg_names, varargs, varkw, defaults = inspect.getargspec(func)
-
-        if not hasattr(func, 'arg_names'):
-            func.arg_names = arg_names
-        
-    def register(self, plan):
-        self.decorate(plan)
-        self.plans.append(plan)
-
-    def match_first(sequent, side, string):
-        term = sequent[side][0]
-        pattern = self.parser.parse(string)
+    def match(self, term, string):
+        pattern = self.parse(string)
         return qterm.match(pattern, term)
 
-    def match_second(sequent, side, string):
-        term = sequent[side][1]
-        pattern = self.parser.parse(string)
-        return qterm.match(pattern, term)
+    @arg_types('str')
+    def left_expand(self, goal, name):
+        definition = self.definitions[name]
+        return [sequent.Sequent(([expand_definition(goal.left[0],
+                                                    definition)]
+                                 + goal.left[1:]),
+                                goal.right)]
 
-        
-#     def left_expand(self, name):
-#         return rule(lambda x: _left_expand(x, self.definitions[name]),
-#                     'left_expand(%r)' % name)
+    @arg_types('str')
+    def right_expand(self, goal, name):
+        definition = self.definitions[name]
+        return [sequent.Sequent(goal.left,
+                                ([expand_definition(goal.right[0],
+                                                    definition)]
+                                 + goal.right[1:]))]
 
-#     def right_expand(self, name):
-#         return rule(lambda x: _right_expand(x, self.definitions[name]),
-#                     'right_expand(%r)' % name)
 
 #     def _theorem(self, sequent):
 #         term = sequent.right[0]
@@ -197,17 +248,6 @@ def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand
     return term.substitute(value, atom)                    
 
-def _left_expand(sequent, definition):
-    return [sequent.Sequent(([expand_definition(sequent.left[0], definition)]
-                     + sequent.left[1:]),
-                    sequent.right)]
-
-def _right_expand(sequent, definition):
-    return [sequent.Sequent(sequent.left,
-                    ([expand_definition(sequent.right[0], definition)]
-                     + sequent.right[1:]))]
-
-    
 
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
@@ -215,14 +255,12 @@ def load_modules(*modules):
     env = Environment()
     env.add_type(syntax.Type(qtype.qobj, 'obj'))
     env.add_type(syntax.Type(qtype.qbool, 'bool'))
-    env.make_parser()
 
     extensions = [open(os.path.join(theory_root, '%s.py' % module))
                   for module in modules]
 
     for extension in extensions:
         env.load_extension(extension)
-        env.make_parser()
 
     env.make_printer()
     return env

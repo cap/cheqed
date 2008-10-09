@@ -1,6 +1,6 @@
 from nose.tools import assert_true, assert_equal
 
-from cheqed.core import qterm, qtype
+from cheqed.core import qterm, qtype, trace
 from cheqed.core.environment import Environment
 
 # test_module = r'''
@@ -37,4 +37,4 @@ def prim(goal):
     env = Environment()
     env.load_extension(rules)
     prim = env.rules['prim']
-    assert_true(prim.is_primitive)
+    assert_true(isinstance(prim(), trace.Primitive))

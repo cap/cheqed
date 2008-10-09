@@ -1,0 +1,96 @@
+import qterm, unification
+
+@primitive
+def axiom(goal):
+    if goal.left[0] != goal.right[0]:
+        raise Exception('axiom does not apply: %s is not the same as %s'
+                        % (goal.left[0], goal.right[0]))
+    return []
+
+@primitive
+@arg_types('term')
+def cut(witness, goal):
+    return [sequent(goal.left, [witness] + goal.right),
+            sequent([witness] + goal.left, goal.right)]
+
+@primitive
+def left_negation(goal):
+    match_ = match(goal.left[0], 'not a')
+    return [sequent(goal.left[1:], [match_['a']] + goal.right)]
+
+@primitive
+def right_negation(goal):
+    match_ = match(goal.right[0], 'not a')
+    return [sequent([match_['a']] + goal.left, goal.right[1:])]
+
+@primitive
+def left_disjunction(goal):
+    match_ = match(goal.left[0], 'a or b')
+    return [sequent([match_['a']] + goal.left[1:], goal.right),
+            sequent([match_['b']] + goal.left[1:], goal.right)]
+
+@primitive
+def right_disjunction(goal):
+    match_ = match(goal.right[0], 'a or b')
+    return [sequent(goal.left,
+                    [match_['a'], match_['b']] + goal.right[1:])]
+
+@primitive
+@arg_types('term')
+def left_universal(goal, witness):
+    match_ = match(goal.left[0], 'for_all x . phi')
+    return [sequent([match_['phi'].substitute(witness, match_['x'])]
+                    + goal.left,
+                    goal.right)]
+
+@primitive
+@arg_types('term')
+def right_universal(goal, witness):
+    match_ = match(goal.right[0], 'for_all x . phi')
+
+    if (not witness.is_variable
+        or witness.name in [var.name for var in goal.free_variables()]):
+        raise unification.UnificationError('Cannot use %s as a witness in %s.'
+                                           % (witness, goal.right[0]))
+
+    return [sequent(goal.left,
+                    [match_['phi'].substitute(witness, match_['x'])]
+                    + goal.right[1:])]
+
+@primitive
+@arg_types('term')
+def left_schema(goal, witness):
+    match_ = match(goal.left[0], 'schema phi . psi')
+    return [sequent([match_['psi'].substitute(witness, match_['phi'], respect_bound=True)]
+                    + goal.left,
+                    goal.right)]
+
+@primitive
+def left_substitution(goal):
+    match_ = match(goal.left[1], 'a = b')
+    return [sequent(([goal.left[0].substitute(match_['b'], match_['a'])]
+                     + goal.left[1:]),
+                    goal.right)]
+
+@primitive
+def right_substitution(goal):
+    match_ = match(goal.left[0], 'a = b')
+    return [sequent(goal.left,
+                    ([goal.right[0].substitute(match_['b'], match_['a'])]
+                     + goal.right[1:]))]
+
+@primitive
+def left_symmetry(goal):
+    match_ = match(goal.left[0], 'a = b')
+    equals = goal.left[0].operator.operator
+    return [sequent([qterm.binary_op(equals, match_['b'], match_['a'])]
+                    + goal.left[1:],
+                    goal.right)]
+
+@primitive
+def right_symmetry(goal):
+    match_ = match(goal.right[0], 'a = b')
+    equals = goal.right[0].operator.operator
+    return [sequent(goal.left,
+                    [qterm.binary_op(equals, match_['b'], match_['a'])]
+                    + goal.right[1:])]

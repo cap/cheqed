@@ -1,9 +1,8 @@
 constant('in:obj->obj->bool')
-operator('in', 2, 'left', 50)
-
 constant('subset:obj->obj->bool')
-operator('subset', 2, 'left', 50)
 
+operator('in', 2, 'left', 50)
+operator('subset', 2, 'left', 50)
 
 # axioms
 axiom('set.extensionality',
@@ -29,7 +28,6 @@ axiom('set.separation',
 axiom('set.infinity',
       r'exists x . (emptyset in x) and '
       r'(for_all y . (y in x) implies (successor(y) in x))')
-
 
 # definitions
 definition(r'emptyset = separation(x, (\y not (y in x)))')
