@@ -232,9 +232,8 @@ class Environment:
     
 def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand
+    atom, term = qterm.unify_types([atom, term])
     return term.substitute(value, atom)                    
-
-
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
 def load_modules(*modules):

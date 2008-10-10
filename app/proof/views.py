@@ -11,6 +11,10 @@ from models import Plan, Proof, Definition
 
 env = environment.make_default()
 
+def definition_add(request):
+    env.add_definition(str(request.POST['definition']))
+    return HttpResponseRedirect(reverse(index))
+
 def proof_start(request):
     goal_text = request.POST['goal']
     goal_term = env.parse(str(goal_text))

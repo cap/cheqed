@@ -7,6 +7,8 @@ urlpatterns = patterns(
     '',
     (r'^$', 'proof.views.index'),
 
+    (r'^definitions/add$', 'proof.views.definition_add'),
+
     (r'^proofs/start$', 'proof.views.proof_start'),
     (r'^proofs/(\d+)/$', 'proof.views.proof_detail'),
     (r'^proofs/(\d+)/advance$', 'proof.views.proof_advance'),

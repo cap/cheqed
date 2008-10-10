@@ -56,3 +56,5 @@ definition(r'ordered_pair_first ='
 
 definition(r'ordered_pair_second ='
            r'(\x . separation(x, is_ordered_pair_second(x)))')
+
+definition(r'em = \x . x or not x')

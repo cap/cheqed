@@ -25,22 +25,13 @@
 {% endif %}
 
 <h2>Add a new definition</h2>
-<form method="post" action="">
+<form method="post" action="{% url proof.views.definition_add %}">
   <p>
-    <textarea>Enter the definition here.</textarea>
+    <textarea rows="4" cols="80" name="definition"></textarea>
   </p>
   <p>
     <input type="submit" value="Add"/>
   </p>
 </form>
-
-{% if definitions %}
-  <h2>Existing definitions</h2>
-  <ol>
-    {% for definition in definitions %}
-      {{ definition.text }}
-    {% endfor %}
-  </ol>
-{% endif %}
 
 {% endblock %}
