@@ -9,6 +9,35 @@ def arg_types(*args):
         return rule
     return assign_types
 
+class RuleBuilder:
+    def __init__(self, environment, rule, factory):
+        self.environment = environment
+        self.rule = rule
+        self.factory = factory
+
+    def __call__(self, *args):
+        args = self.environment.parse_args(self.rule, args)
+        return self.factory(self.rule, *args)
+
+    def rule_name(self):
+        return self.rule.func_name
+
+    def arg_types(self):
+        try:
+            return self.rule.arg_types
+        except AttributeError:
+            return []
+
+    def is_applicable(self, goal):
+        if self.arg_types():
+            return True
+
+        try:
+            self().evaluate(goal)
+            return True
+        except Exception, e:
+            return False
+
 class Environment:
     def __init__(self):
         self.constants = {}
@@ -104,7 +133,7 @@ class Environment:
         elif arg_type == 'term':
             return repr(self.printer.term(arg))
         else:
-            raise Exception('unrecognized arg_type')
+            raise Exception('unrecognized arg_type %r' % arg_type)
 
     def print_args(self, rule, args):
         try:
@@ -119,53 +148,34 @@ class Environment:
             return '%s(%s)' % (proof.func.func_name,
                                ', '.join(args))
         elif isinstance(proof, trace.Branch):
+            rule = self.print_proof(proof.rule)
             branches = [self.print_proof(branch) for branch in proof.branches]
-            return 'branch(%s, %s)' % (self.print_proof(proof.rule),
-                                       ', '.join(branches))
+            return 'branch(%s)' % (', '.join([rule] + branches))
         else:
-            raise Exception('unrecognized arg_type')
+            raise Exception('unrecognized proof type %r' % proof)
 
-    def _make_primitive(self, rule):
-        def _make(*args):
-            args = self.parse_args(rule, args)
-            return trace.Primitive(rule, *args)
-        return _make
-    
     def add_primitive(self, rule):
-        make = self._make_primitive(rule)
-        self.rules[rule.func_name] = make
-        return make
-
-    def _make_compound(self, rule):
-        def _make(*args):
-            args = self.parse_args(rule, args)
-            return trace.Compound(rule, *args)
-        return _make
+        builder = RuleBuilder(self, rule, trace.Primitive)
+        self.rules[builder.rule_name()] = builder
+        return builder
 
     def add_compound(self, rule):
-        make = self._make_compound(rule)
-        self.rules[rule.func_name] = make
-        return make
+        builder = RuleBuilder(self, rule, trace.Compound)
+        self.rules[builder.rule_name()] = builder
+        return builder
 
-    def load_extension(self, extension):
+    def _make_scope(self):
         scope = globals().copy()
         scope.update(self.helpers)
         scope.update(self.rules)
-        exec extension in scope
+        return scope        
+    
+    def load_extension(self, extension):
+        exec extension in self._make_scope()
 
-    def load_plan(self, plan):
-        mod = __import__(plan)
-        components = plan.split('.')
-        for comp in components[1:]:
-            mod = getattr(mod, comp)
-        for name in dir(mod):
-            rule = getattr(mod, name)
-            try:
-                if rule.is_registered == True:
-                    self.plans[rule.func_name] = rule
-            except AttributeError:
-                pass
-
+    def evaluate(self, text):
+        return eval(text, self._make_scope())
+        
     def make_parser(self):
         extensions = self.types + self.operators + self.binders
         self.parser = parser.Parser(syntax.Syntax(extensions))
@@ -179,33 +189,9 @@ class Environment:
             self.make_parser()
         return self.parser.parse(string)
 
-    def is_applicable(self, func, goal):
-        if hasattr(func, 'is_applicable'):
-            return func.is_applicable(self, goal)
-
-        if not hasattr(func, 'arg_names'):
-            return False        
-        if len(func.arg_names) > 0:
-            return True
-
-        try:
-            tester = func()
-            tester.subgoals(goal)
-        except Exception, e:
-            return False
-
-        return True
-
     def applicable_rules(self, goal):
-        applicable = []
-        for name, func in self.plans.items():
-            if self.is_applicable(func, goal):
-                applicable.append((func.func_name, func.arg_names))
-
-        return applicable
-
-    def evaluate(self, text):
-        return eval(text, globals(), self.plans)
+        return [builder for builder in self.rules.values()
+                if builder.is_applicable(goal)]
 
     def match(self, term, string):
         pattern = self.parse(string)
@@ -263,4 +249,12 @@ def load_modules(*modules):
         env.load_extension(extension)
 
     env.make_printer()
+    return env
+
+def make_default():
+    env = load_modules('logic', 'set')
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_structural.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_primitive.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_compound.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated.py'))
     return env

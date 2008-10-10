@@ -1,0 +1,62 @@
+<%def name="assumption_class(primitive)">
+%if primitive == 'assumption()':
+proof_assumption
+%endif
+</%def>
+
+<%def name="begin_primitive(primitive, goal, rules, assumption_index)">
+  <div class="proof_primitive ${assumption_class(primitive)}">
+    ${primitive}
+    <a href="#" onclick="$(this).siblings('.proof_goal').toggle();">goal</a>
+    <div class="proof_goal">
+      ${goal}
+    </div>
+    %if rules:
+      <div class="proof_action_list">
+        %for builder in rules:
+          <div class="proof_action">
+            <form method="post" action="advance">
+              <input type="hidden" name="rule_name" 
+                     value="${builder.rule_name()}"/>
+              <input type="hidden" name="assumption_index" 
+                     value="${assumption_index}"/>
+              <input type="submit" value="apply"/>
+              ${builder.rule_name()}
+              %for index, arg_type in enumerate(builder.arg_types()):
+                ${arg_type}
+                <input type="text" name="arg"/>
+              %endfor
+            </form>
+          </div>
+        %endfor
+      </div>
+    %endif
+</%def>
+
+<%def name="end_primitive()">
+  </div>
+</%def>
+
+<%def name="begin_compound(compound, goal)">
+  <div class="proof_compound">
+    ${compound}
+    <a href="#" onclick="$(this).siblings('.proof_goal').toggle();">goal</a>
+    <a href="#" onclick="$(this).siblings('.proof_compound_expansion').toggle();">expansion</a>
+    <div class="proof_goal">
+      ${goal}
+    </div>
+    <div class="proof_compound_expansion">
+</%def>
+
+<%def name="end_compound()">
+    </div>
+  </div>
+</%def>
+
+<%def name="begin_branch()">
+  <div class="proof_branch">
+</%def>
+
+<%def name="end_branch()">
+  </div>
+</%def>

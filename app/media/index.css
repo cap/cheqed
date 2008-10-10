@@ -100,12 +100,18 @@ input
 .proof_branch
 {
   padding-left: 20px;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
 }
 
-.proof_step
+.proof_compound_expansion
 {
+  padding-left: 20px;
+  background-color: #EEEEEE;
+}
+
+.proof_assumption
+{
+  background-color: #DDFFDD;
+  border-bottom: 1px solid #AABBAA;
 }
 
 .zebra_0

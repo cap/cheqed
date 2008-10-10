@@ -1,6 +1,10 @@
 import qterm, unification
 
 @primitive
+def assumption(goal):
+    return []
+
+@primitive
 def axiom(goal):
     if goal.left[0] != goal.right[0]:
         raise Exception('axiom does not apply: %s is not the same as %s'

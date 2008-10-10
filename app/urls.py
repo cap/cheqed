@@ -12,7 +12,6 @@ urlpatterns = patterns(
     (r'^proofs/(\d+)/advance$', 'proof.views.proof_advance'),
 
     (r'^parser/$', 'proof.views.parser'),
-    (r'^prover/$', 'proof.views.prover'),
     (r'^definitions/$', 'proof.views.definitions'),
     (r'^rules/$', 'proof.views.rules'),
 

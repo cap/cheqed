@@ -3,6 +3,11 @@
 <head>
 <title>Proof</title>
 <link rel="stylesheet" href="/media/index.css" type="text/css"/>
+<script type="text/javascript" src="/media/jquery-1.2.6.js"></script>
+<script type="text/javascript">
+  {% block code %}
+  {% endblock %}
+</script>
 </head>
 
 <body>
@@ -11,8 +16,14 @@
 </div>
 
 <div class="toolbar">
-  <a href="{% url proof.views.index %}">Proofs</a> . 
-    <a href="/parser/">Parser</a> .
+  <a href="{% url proof.views.index %}">Proofs</a> 
+  . 
+  <a href="{% url proof.views.definitions %}">Definitions</a> 
+  . 
+  <a href="{% url proof.views.rules %}">Rules</a> 
+  . 
+  <a href="/parser/">Parser</a>
+
 </div>
 
 <div class="container">

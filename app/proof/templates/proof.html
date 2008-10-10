@@ -1,41 +1,19 @@
 {% extends "base.html" %}
 
+{% block code %}
+function init()
+{
+  $('.proof_compound_expansion').toggle();
+  $(':not(.proof_assumption) > .proof_goal').toggle();
+}
+
+$(init);
+{% endblock %}
+
 {% block content %}
 <h2>Proof</h2>
-{% for line in lines %}
-{% ifequal line "begin_branch" %}
-  <div class="proof_branch">
-{% else %}
-  {% ifequal line "end_branch" %}
-    </div>
-  {% else %}
-    <div class="proof_step {% cycle 'zebra_0' 'zebra_1' %} {% if line.assumption %}proof_assumption{% endif %}">
-      <div class="proof_sequent">
-        {{line.sequent}}
-      </div>
-      {% if line.assumption %}
-        <form method="post" action="{% url proof.views.proof_advance proof.id %}">
-          <input type="hidden" name="assumption_index" 
-                 value="{{line.assumption_index}}"/>
-          {% for name, args in line.rules %}
-          <input type="submit" name="apply_rule" value="{{name}}"/>
-          {% for arg in args %}
-          <input type="text" name="{{name}}_{{arg}}"/>
-          {% endfor %}
-          <br/>
-          {% endfor %}
-        </form>
-      {% else %}
-        {{line.plan}}
-      {% endif %}
-
-
-    </div>
-  {% endifequal %}
-{% endifequal %}
-{% endfor %}
+{{tree|safe}}
 
 <h2>Raw Proof</h2>
 {{ proof.plan.text }}
-
 {% endblock %}

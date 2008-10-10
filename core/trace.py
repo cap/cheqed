@@ -1,20 +1,17 @@
 class NullLog:
-    def emit_goal(self, goal):
-        pass
-    
-    def begin_primitive(self, primitive):
+    def begin_primitive(self, primitive, goal):
         pass
 
     def end_primitive(self, primitive):
         pass
     
-    def begin_compound(self, compound):
+    def begin_compound(self, compound, goal):
         pass
 
     def end_compound(self, compound):
         pass
 
-    def begin_branch(self, branch):
+    def begin_branch(self, branch, goal):
         pass
 
     def end_branch(self, branch):
@@ -29,13 +26,17 @@ class Primitive:
         return 'Primitive(%r, %r)' % (self.func, self.args)
     
     def evaluate(self, goal, log=NullLog()):
-        log.begin_primitive(self)
-        log.emit_goal(goal)
+        log.begin_primitive(self, goal)
 
         subgoals = self.func(goal, *self.args)
 
         log.end_primitive(self)
         return subgoals
+
+    def replace(self, a, b):
+        if self == a:
+            return b
+        return self
 
 class Compound:
     def __init__(self, func, *args):
@@ -46,18 +47,22 @@ class Compound:
         return 'Compound(%r, %r)' % (self.func, self.args)
 
     def evaluate(self, goal, log=NullLog()):
-        log.begin_compound(self)
-        log.emit_goal(goal)
+        log.begin_compound(self, goal)
 
         expansion = self.expand(goal)
-        subgoals = expansion.evaluate(goal)
+        subgoals = expansion.evaluate(goal, log)
 
         log.end_compound(self)
         return subgoals
     
     def expand(self, goal):
         return self.func(goal, *self.args)
-    
+
+    def replace(self, a, b):
+        if self == a:
+            return b
+        return self
+
 class Branch:
     def __init__(self, rule, *branches):
         self.rule = rule
@@ -66,12 +71,17 @@ class Branch:
     def __repr__(self):
         return 'Branch(%r, %r)' % (self.rule, self.branches)
 
+    def replace(self, a, b):
+        if self == a:
+            return b
+        return Branch(self.rule.replace(a, b),
+                      *[branch.replace(a, b) for branch in self.branches])
+
     def evaluate(self, goal, log=NullLog()):
-        log.begin_branch(self)
-        log.emit_goal(goal)
-        
-        unmet_goals = []
         subgoals = self.rule.evaluate(goal, log)
+        log.begin_branch(self, goal)
+
+        unmet_goals = []
         for subgoal, branch in zip(subgoals, self.branches):
             unmet_goals.extend(branch.evaluate(subgoal, log))
 

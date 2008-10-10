@@ -5,115 +5,142 @@ from django.core.urlresolvers import reverse
 from django.template import Context, loader
 from django.shortcuts import get_object_or_404, render_to_response
 
-from cheqed.core import environment, sequent, prover as prv, plan
-from cheqed.core.rules import registry
+from cheqed.core import environment, sequent, trace
 
 from models import Plan, Proof, Definition
 
+env = environment.make_default()
 
 def proof_start(request):
     goal_text = request.POST['goal']
-    goal_term = pt(str(goal_text))
+    goal_term = env.parse(str(goal_text))
     goal_seq = sequent.Sequent([], [goal_term])
 
     p = Plan()
-    p.text = plan.assumption().normalize(goal_seq).pretty_repr(env.printer)
+    assumption = env.rules['assumption']()
+    p.text = env.print_proof(assumption)
     p.save()
     
     proof = Proof()
     proof.plan = p
-    proof.goal = prt(goal_term)
+    proof.goal = env.printer.term(goal_term)
     proof.save()
 
     return HttpResponseRedirect(reverse(proof_detail,
                                         args=[proof.id]))
 
+from mako.template import Template
+from cStringIO import StringIO
+
 class Walker:
     def __init__(self):
-        self.lines = []
+        self.template = Template(filename='/home/cap/thesis/cheqed/app/proof/proof.html', format_exceptions=True)
+        self.buffer = StringIO()
+        self.assumption_index = 0
 
-    def begin_branch(self):
-        self.lines.append('begin_branch')
+    def render(self, name, **kwargs):
+        template = self.template.get_def(name)
+        self.buffer.write(template.render(**kwargs))
 
-    def end_branch(self):
-        self.lines.append('end_branch')
+    def begin_primitive(self, primitive, goal):
+        assumption_index = self.assumption_index
+        if primitive.func.func_name == 'assumption':
+            rules = env.applicable_rules(goal)
+            rules.sort(key=lambda x: x.rule_name())
+            self.assumption_index += 1
+        else:
+            rules = []
+        p_primitive = env.print_proof(primitive)
+        p_goal = env.printer.sequent(goal)
+        self.render('begin_primitive',
+                    primitive=p_primitive,
+                    goal=p_goal,
+                    rules=rules,
+                    assumption_index=assumption_index)
 
-    def emit(self, rule):
-        self.lines.append(rule.pretty_repr(env.printer))
+    def end_primitive(self, primitive):
+        self.render('end_primitive')
+    
+    def begin_compound(self, compound, goal):
+        p_compound = env.print_proof(compound)
+        p_goal = env.printer.sequent(goal)
+        self.render('begin_compound',
+                    compound=p_compound,
+                    goal=p_goal)
 
-    def emit_step(self, p, sequent):
-        line = {'plan': p.pretty_repr(env.printer),
-                'sequent': pr(sequent)}
-        if isinstance(p, plan.Assumption):
-            line['assumption'] = True
-            line['rules'] = prv.env.applicable_rules(sequent)
-        self.lines.append(line)
+    def end_compound(self, compound):
+        self.render('end_compound')
+
+    def begin_branch(self, branch, goal):
+        if len(branch.branches) > 1:
+            self.render('begin_branch')
+
+    def end_branch(self, branch):
+        if len(branch.branches) > 1:
+            self.render('end_branch')
 
 def proof_detail(request, proof_id):
     proof = Proof.objects.get(id=proof_id)
-    proof_plan = prv.env.evaluate(str(proof.plan.text))
-    proof_goal = sequent.Sequent([], [pt(str(proof.goal))])
+    proof_plan = env.evaluate(str(proof.plan.text))
+    proof_goal = sequent.Sequent([], [env.parse(str(proof.goal))])
     walker = Walker()
-    plan.trace(proof_plan, proof_goal, walker)
-    index = 0
-    for line in walker.lines:
-        if hasattr(line, 'get') and line.get('assumption', False):
-            line['assumption_index'] = index
-            index += 1
+    proof_plan.evaluate(proof_goal, walker)
 
     return render_to_response('proof.html',
                               {'proof': proof,
-                               'lines': walker.lines})
+                               'tree': walker.buffer.getvalue()})
 
+class AssumptionWalker:
+    def __init__(self):
+        self.assumptions = []
+
+    def begin_primitive(self, primitive, goal):
+        if primitive.func.func_name == 'assumption':
+            self.assumptions.append((primitive, goal))
+
+    def end_primitive(self, primitive):
+        pass
+    
+    def begin_compound(self, compound, goal):
+        pass
+    
+    def end_compound(self, compound):
+        pass
+
+    def begin_branch(self, branch, goal):
+        pass
+    
+    def end_branch(self, branch):
+        pass
+    
 def proof_advance(request, proof_id):
     assert request.method == 'POST'
     proof = Proof.objects.get(id=proof_id)
-    proof_plan = prv.env.evaluate(str(proof.plan.text))
-    proof_goal = sequent.Sequent([], [pt(str(proof.goal))])
-    
-    rule = str(request.POST['apply_rule'])
-    assumption_index = int(request.POST['assumption_index'])
-    kwargs = {}
-    for item in request.POST:
-        match = re.match(rule + r'\_([a-zA-Z]+)', item)
-        print 'matching', item
-        if match:
-            name = match.group(1)
-            try:
-                if name == 'witness':
-                    value = "parse(r'%s')" % str(request.POST[item])
-                elif name == 'index':
-                    value = int(request.POST[item])
-                elif name == 'name':
-                    value = repr(str(request.POST[item]))
-            except Exception, e:
-                error = str(e)
-                break
-            kwargs[str(name)] = value
-    try:
-        assert len(kwargs) <= 1
-        code = ''
-        if len(kwargs) == 0:
-            code = '%s()' % rule
-        else:
-            code = '%s(%s)' % (rule, kwargs.values()[0])
+    proof_plan = env.evaluate(str(proof.plan.text))
+    proof_goal = sequent.Sequent([], [env.parse(str(proof.goal))])
 
-        node = prv.env.evaluate(code)
-        proof_plan = proof_plan.replace(proof_plan.assumptions()[assumption_index], node)
-        proof.plan.text = proof_plan.normalize(proof_goal).pretty_repr(env.printer)
-        proof.plan.save()
-    except Exception, e:
-        error = str(e)
-        raise
+    walker = AssumptionWalker()
+    proof_plan.evaluate(proof_goal, walker)
+    
+    rule_name = str(request.POST['rule_name'])
+    args = request.POST.getlist('arg')
+    assumption_index = int(request.POST['assumption_index'])
+
+    builder = env.rules[rule_name]
+    rule = builder(*args)
+
+    assumption, assumption_goal = walker.assumptions[assumption_index]
+    subgoals = rule.evaluate(assumption_goal)
+    padding = [env.rules['assumption']() for subgoal in subgoals]
+    branch = trace.Branch(rule, *padding)
+
+    proof_plan = proof_plan.replace(assumption, branch)
+    proof.plan.text = env.print_proof(proof_plan)
+    proof.plan.save()
 
     return HttpResponseRedirect(reverse(proof_detail,
                                         args=[proof_id]))
     
-
-env = prv.env
-pt = env.parser.parse
-pr = env.printer.sequent
-prt = env.printer.term
 
 def index(request):
     definitions = Definition.objects.all()
@@ -144,9 +171,9 @@ phi(x) or x
         terms = str(request.GET['terms'])
         for term in terms.splitlines():
             try:
-                parsed = pt(term)
+                parsed = env.parse(term)
                 result = repr(parsed)
-                pretty = prt(parsed)
+                pretty = env.printer.term(parsed)
             except Exception, e:
                 result = str(e)
                 pretty = ''
@@ -159,127 +186,15 @@ phi(x) or x
     template = loader.get_template('parser.html')
     return HttpResponse(template.render(context))
 
-def make_pretty_proof(proof):
-    lines = proof.flatten()
-    for line in lines:
-        line.pretty = line.plan.pretty_repr(env.printer)
-        line.spaces = range(line.indentation * 4)
-    return lines
-
-def real_prover(request):
-    if 'reset' in request.GET:
-        del request.session['proof']; del request.session['goal']
-    error = ''
-    prf = None
-    if 'proof' in request.session:
-        prf = prv.env.evaluate(str(request.session['proof']))
-    goal = None
-    if 'goal' in request.session:
-        goal = pt(str(request.session['goal']))
-        goal_seq = sequent.Sequent([], [goal])
-        
-    if request.POST:
-        if 'start_over' in request.POST:
-            try:
-                goal = pt(str(request.POST['goal']))
-                goal_seq = sequent.Sequent([], [goal])
-                prf = prv.assumption().normalize(goal_seq)
-            except Exception, e:
-                error = str(e)
-        elif 'apply_rule' in request.POST:
-            rule = str(request.POST['apply_rule'])
-            kwargs = {}
-            for item in request.POST:
-                match = re.match(rule + r'\_([a-zA-Z]+)', item)
-                if match:
-                    name = match.group(1)
-                    try:
-                        if name == 'witness':
-                            value = "parse(r'%s')" % str(request.POST[item])
-                        elif name == 'index':
-                            value = int(request.POST[item])
-                        elif name == 'name':
-                            value = repr(str(request.POST[item]))
-                    except Exception, e:
-                        error = str(e)
-                        break
-                    kwargs[str(name)] = value
-            try:
-                assert len(kwargs) <= 1
-                code = ''
-                if len(kwargs) == 0:
-                    code = '%s()' % rule
-                else:
-                    code = '%s(%s)' % (rule, kwargs.values()[0])
-
-                node = prv.env.evaluate(code)
-                prf = prf.replace(prf.assumptions()[0], node).normalize(goal_seq)
-            except Exception, e:
-                error = str(e)
-
-    rules = []
-    goals = []
-    if prf is not None:
-        rules = prv.env.applicable_rules(goal_seq)
-        try:
-            for gl in prf.subgoals(goal_seq):
-                ppseq = {'left':[], 'right':[]}
-                for term in gl.left:
-                    ppterm = {'pretty': prt(term),
-                              'repr': repr(term),}
-                    ppseq['left'].append(ppterm)
-                for term in gl.right:
-                    ppterm = {'pretty': prt(term),
-                              'repr': repr(term),}
-                    ppseq['right'].append(ppterm)
-                    
-                goals.append(ppseq)
-        except Exception, e:
-            error = str(e)
-
-    if prf is not None:
-        request.session['proof'] = prf.pretty_repr(env.printer)
-        
-    if goal is not None:
-        request.session['goal'] = prt(goal)
-
-    walker = Walker()
-    plan.trace(prf, goal_seq, walker)
-        
-    serialized = None
-    pretty_proof = None
-    if prf is not None and goal is not None:
-        serialized = prt(goal) + "..." + prf.pretty_repr(env.printer)
-        pretty_proof = make_pretty_proof(prf)
-
-    serialized = repr(plan.compress(prf))
-        
-    context = Context(
-        {'rules': sorted(rules),
-         'error': error,
-         'goals': goals,
-         'proof': serialized,
-         'pretty_proof': pretty_proof,
-         'tree_view': walker.lines,
-         })
-    template = loader.get_template('prover.html')
-    return HttpResponse(template.render(context))
-
-#import cProfile
-
-def prover(request):
-#    cProfile.runctx('real_prover(request)', globals(), locals(), 'web_profile')
-    return real_prover(request)
-
 def definitions(request):
     defs = []
     for name, term in env.definitions.iteritems():
-        defs.append((name, prt(term)))
+        defs.append((name, env.printer.term(term)))
     defs.sort()
 
     axioms = []
     for name, term in env.axioms.iteritems():
-        axioms.append((name, prt(term)))
+        axioms.append((name, env.printer.term(term)))
     axioms.sort()
 
     context = Context({
@@ -291,8 +206,8 @@ def definitions(request):
 
 def rules(request):
     rules = []
-    for func in registry.rules:
-        rules.append((func.func_name, ''))
+    for builder in env.rules.values():
+        rules.append((builder.rule_name(), ''))
     rules.sort()
 
     context = Context({
