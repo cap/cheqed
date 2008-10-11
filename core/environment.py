@@ -252,8 +252,8 @@ def load_modules(*modules):
 
 def make_default():
     env = load_modules('logic', 'set')
-    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_structural.py'))
-    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_primitive.py'))
-    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_compound.py'))
-    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/structure.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/logic_primitive.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/logic_compound.py'))
+    env.load_extension(open('/home/cap/thesis/cheqed/core/rules/set.py'))
     return env

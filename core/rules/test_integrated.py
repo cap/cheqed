@@ -5,11 +5,7 @@ from cheqed.core import environment, trace, sequent
 class TestRules:
     @classmethod
     def setup_class(cls):
-        cls.env = environment.load_modules('logic', 'set')
-        cls.env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_structural.py'))
-        cls.env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_primitive.py'))
-        cls.env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated_logical_compound.py'))
-        cls.env.load_extension(open('/home/cap/thesis/cheqed/core/rules/integrated.py'))
+        cls.env = environment.make_default()
 
     def test_left_negation(self):
         term = self.env.parse('not a')
@@ -45,15 +41,3 @@ class TestRules:
         goal = [sequent.Sequent([], [self.env.parse('a:bool')]),
                 sequent.Sequent([], [self.env.parse('b:bool')])]
         assert_equal(result, goal)
-        
-    def test_foo(self):
-        term = self.env.parse('a or not a')
-        seq = sequent.Sequent([], [term])
-
-        rule = self.env.rules['excluded_middle']()
-
-        rule.evaluate(seq)
-        print self.env.print_proof(rule)
-
-        expanded = rule.expand(seq)
-        print self.env.print_proof(expanded)
