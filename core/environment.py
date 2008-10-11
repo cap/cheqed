@@ -1,6 +1,6 @@
 import os.path
 
-from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, plan
+from cheqed.core import parser, printer, qterm, qtype, syntax, sequent
 from cheqed.core import trace
 
 def arg_types(*args):
@@ -70,11 +70,6 @@ class Environment:
 
         self.add_primitive(self.left_expand)
         self.add_primitive(self.right_expand)
-        
-        self.plans = {}
-        self.plans['assumption'] = plan.assumption
-        self.plans['branch'] = plan.branch
-        self.plans['parse'] = self.parse
 
     def add_type(self, type_):
         self.types.append(type_)
