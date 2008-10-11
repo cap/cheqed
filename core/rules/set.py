@@ -1,13 +1,13 @@
-#@applicable('right', 'a = b')
 @compound
 @arg_types('term')
+@applicable(lambda goal: match(goal.right[0], 'a = b'))
 def right_extension(goal, witness):
-    match = match_first(goal, 'right', 'a = b')
+    match_ = match(goal.right[0], 'a = b')
     return sequence(theorem_cut('set.extensionality'),
-                    left_universal(match['a']),
+                    left_universal(match_['a']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['b']),
+                    left_universal(match_['b']),
                     left_permutation(1),
                     left_weakening(),
                     left_universal(witness),
@@ -17,9 +17,9 @@ def right_extension(goal, witness):
                            right_bidirectional(),
                            axiom()))
 
-#@applicable('left', 'a subset b')
 @compound
 @arg_types('term')
+@applicable(lambda goal: match(goal.left[0], 'a subset b'))
 def left_subset(goal, witness):
     return sequence(left_expand('subset'),
                     left_universal(witness),
@@ -27,9 +27,9 @@ def left_subset(goal, witness):
                     left_weakening(),
                     left_implication())
 
-#@applicable('right', 'a subset b')
 @compound
 @arg_types('term')
+@applicable(lambda goal: match(goal.right[0], 'a subset b'))
 def right_subset(goal, witness):
     return sequence(right_expand('subset'),
                     right_universal(witness),
@@ -37,12 +37,12 @@ def right_subset(goal, witness):
 
 @compound
 def left_powerset(goal):
-    match = match_first(goal, 'left', 'a in powerset(b)')
+    match_ = match(goal.left[0], 'a in powerset(b)')
     return sequence(theorem_cut('set.powerset'),
-                    left_universal(match['b']),
+                    left_universal(match_['b']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['a']),
+                    left_universal(match_['a']),
                     left_permutation(1),
                     left_weakening(),
                     branch(left_bidirectional(),
@@ -51,30 +51,30 @@ def left_powerset(goal):
 
 @compound
 def right_powerset(goal):
-    match = match_first(goal, 'right', 'a in powerset(b)')
+    match_ = match(goal.right[0], 'a in powerset(b)')
     return sequence(theorem_cut('set.powerset'),
-                    left_universal(match['b']),
+                    left_universal(match_['b']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['a']),
+                    left_universal(match_['a']),
                     left_permutation(1),
                     left_weakening(),
                     branch(left_bidirectional(),
                            right_weakening(),
                            axiom()))
 
-#@applicable('right', 'x in separation(X, phi)')
 @compound
+@applicable(lambda goal: match(goal.right[0], 'x in separation(X, phi)'))
 def right_separation(goal):
-    match = match_first(goal, 'right', 'x in separation(X, phi)')
+    match_ = match(goal.right[0], 'x in separation(X, phi)')
     return sequence(theorem_cut('set.separation'),
-                    left_schema(match['phi']),
+                    left_schema(match_['phi']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['X']),
+                    left_universal(match_['X']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['x']),
+                    left_universal(match_['x']),
                     left_permutation(1),
                     left_weakening(),
                     branch(left_bidirectional(),
@@ -87,18 +87,18 @@ def right_separation(goal):
                                            left_negation())),
                            axiom()))
 
-#@applicable('left', 'x in separation(X, phi)')
 @compound
+@applicable(lambda goal: match(goal.left[0], 'x in separation(X, phi)'))
 def left_separation(goal):
-    match = match_first(goal, 'left', 'x in separation(X, phi)')
+    match_ = match(goal.left[0], 'x in separation(X, phi)')
     return sequence(theorem_cut('set.separation'),
-                    left_schema(match['phi']),
+                    left_schema(match_['phi']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['X']),
+                    left_universal(match_['X']),
                     left_permutation(1),
                     left_weakening(),
-                    left_universal(match['x']),
+                    left_universal(match_['x']),
                     left_permutation(1),
                     left_weakening(),
                     branch(left_bidirectional(),

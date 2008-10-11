@@ -1,6 +1,6 @@
 import os.path
 
-from cheqed.core import parser, printer, qterm, qtype, syntax, sequent
+from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, unification
 from cheqed.core import trace
 
 def arg_types(*args):
@@ -8,6 +8,20 @@ def arg_types(*args):
         rule.arg_types = args
         return rule
     return assign_types
+
+def make_is_applicable(predicate):
+    def is_applicable(goal):
+        try:
+            return predicate(goal)
+        except unification.UnificationError:
+            return False
+    return is_applicable
+
+def applicable(predicate):
+    def assign_predicate(rule):
+        rule.is_applicable = make_is_applicable(predicate)
+        return rule
+    return assign_predicate
 
 class RuleBuilder:
     def __init__(self, environment, rule, factory):
@@ -29,6 +43,11 @@ class RuleBuilder:
             return []
 
     def is_applicable(self, goal):
+        try:
+            return self.rule.is_applicable(goal)
+        except AttributeError:
+            pass
+        
         if self.arg_types():
             return True
 
@@ -51,6 +70,7 @@ class Environment:
 
         self.rules = {}
         self.helpers = {
+            'applicable': applicable,
             'arg_types': arg_types,
             'match': self.match,
 
@@ -70,6 +90,8 @@ class Environment:
 
         self.add_primitive(self.left_expand)
         self.add_primitive(self.right_expand)
+        self.add_primitive(self.theorem)
+        self.add_compound(self.theorem_cut)        
 
     def add_type(self, type_):
         self.types.append(type_)
@@ -109,6 +131,8 @@ class Environment:
         elif arg_type == 'str':
             return str(arg)
         elif arg_type == 'term':
+            if isinstance(arg, qterm.Term):
+                return arg
             return self.parse(arg)
         else:
             raise Exception('unrecognized arg_type')
@@ -208,22 +232,22 @@ class Environment:
                                                     definition)]
                                  + goal.right[1:]))]
 
+    def theorem(self, goal):
+        term = goal.right[0]
+        for thm in self.axioms.itervalues():
+            if thm == term:
+                return []
+        raise Exception('theorem does not apply')
 
-#     def _theorem(self, sequent):
-#         term = sequent.right[0]
-#         for thm in env.axioms.itervalues():
-#             if thm == term:
-#                 return []
-#         raise unification.UnificationError('theorem does not apply.')
-
-#     def theorem(self):
-#         return rule(_theorem, 'theorem()')
-
-#     @make_compound
-#     def theorem_cut(self, goal, name):
-#         return branch(cut(self.axioms[name]),
-#                       theorem(),
-#                       assumption())
+    @arg_types('str')
+    def theorem_cut(self, goal, name):
+        branch = trace.branch
+        cut = self.rules['cut']
+        theorem = self.rules['theorem']
+        noop = self.rules['noop']
+        return branch(cut(self.axioms[name]),
+                      theorem(),
+                      noop())
     
 def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand

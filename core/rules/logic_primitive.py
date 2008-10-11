@@ -1,10 +1,17 @@
 import qterm, unification
 
 @primitive
+@applicable(lambda goal: False)
 def assumption(goal):
     return []
 
 @primitive
+@applicable(lambda goal: False)
+def noop(goal):
+    return [goal]
+
+@primitive
+@applicable(lambda goal: False)
 def axiom(goal):
     if goal.left[0] != goal.right[0]:
         raise Exception('axiom does not apply: %s is not the same as %s'
@@ -13,7 +20,7 @@ def axiom(goal):
 
 @primitive
 @arg_types('term')
-def cut(witness, goal):
+def cut(goal, witness):
     return [sequent(goal.left, [witness] + goal.right),
             sequent([witness] + goal.left, goal.right)]
 
@@ -41,6 +48,7 @@ def right_disjunction(goal):
 
 @primitive
 @arg_types('term')
+@applicable(lambda goal: match(goal.left[0], 'for_all x . phi'))
 def left_universal(goal, witness):
     match_ = match(goal.left[0], 'for_all x . phi')
     return [sequent([match_['phi'].substitute(witness, match_['x'])]
@@ -49,6 +57,7 @@ def left_universal(goal, witness):
 
 @primitive
 @arg_types('term')
+@applicable(lambda goal: match(goal.right[0], 'for_all x . phi'))
 def right_universal(goal, witness):
     match_ = match(goal.right[0], 'for_all x . phi')
 
@@ -63,6 +72,7 @@ def right_universal(goal, witness):
 
 @primitive
 @arg_types('term')
+@applicable(lambda goal: match(goal.left[0], 'schema phi . psi'))
 def left_schema(goal, witness):
     match_ = match(goal.left[0], 'schema phi . psi')
     return [sequent([match_['psi'].substitute(witness, match_['phi'], respect_bound=True)]

@@ -58,9 +58,9 @@ def left_bidirectional(goal):
                                            axiom(),
                                            assumption()))))
 
-#@applicable('right', 'exists x . phi')
 @compound
 @arg_types('term')
+@applicable(lambda goal: match(goal.right[0], 'exists x . phi'))
 def right_existential(goal, witness):
     return sequence(right_contraction(),
                     right_expand('exists'),
@@ -69,9 +69,9 @@ def right_existential(goal, witness):
                     left_negation(),
                     left_weakening())
 
-#@applicable('left', 'exists x . phi')
 @compound
 @arg_types('term')
+@applicable(lambda goal: match(goal.left[0], 'exists x . phi'))
 def left_existential(goal, witness):
     return sequence(left_expand('exists'),
                     left_negation(),
