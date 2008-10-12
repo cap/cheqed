@@ -4,13 +4,68 @@ proof_assumption
 %endif
 </%def>
 
+<%def name="sequent_rules(assumption_index, line, side)">
+  %if line == 0:
+    <form method="post" action="advance">
+      <input type="hidden" name="rule_name" value="${side}_weakening"/>
+      <input type="hidden" name="assumption_index" value="${assumption_index}"/>
+      <input type="submit" value="W"/>
+    </form>
+    <form method="post" action="advance">
+      <input type="hidden" name="rule_name" value="${side}_contraction"/>
+      <input type="hidden" name="assumption_index" value="${assumption_index}"/>
+      <input type="submit" value="C"/>
+    </form>
+  %else:
+    <form method="post" action="advance">
+      <input type="hidden" name="rule_name" value="${side}_permutation"/>
+      <input type="hidden" name="assumption_index" value="${assumption_index}"/>
+      <input type="hidden" name="arg" value="${line}"/>
+      <input type="submit" value="P"/>
+    </form>
+  %endif
+</%def>
+
+<%def name="sequent(primitive, goal, assumption_index)">
+  <div class="proof_goal">
+    <table>
+      %for line, (left, right) in enumerate(goal):
+        <tr>
+          <td>
+            %if primitive == 'assumption()' and left:
+              <span class="proof_goal_rules">
+                ${sequent_rules(assumption_index, line, 'left')}
+              </span>
+            %endif
+          </td>
+          <td>
+            ${left}
+          </td>
+          <td>
+            |-
+          </td>
+          <td>
+            ${right}
+          </td>
+          <td>
+            %if primitive == 'assumption()' and right:
+              <span class="proof_goal_rules">
+                ${sequent_rules(assumption_index, line, 'right')}
+              </span>
+            %endif
+
+          </td>
+        </tr>
+      %endfor
+    </table>
+  </div>
+</%def>
+
 <%def name="begin_primitive(primitive, goal, rules, assumption_index)">
   <div class="proof_primitive ${assumption_class(primitive)}">
     ${primitive}
     <a href="#" onclick="$(this).siblings('.proof_goal').toggle();">goal</a>
-    <div class="proof_goal">
-      ${goal}
-    </div>
+    ${sequent(primitive, goal, assumption_index)}
     %if rules:
       <div class="proof_action_list">
         %for builder in rules:

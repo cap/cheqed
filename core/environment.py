@@ -13,7 +13,7 @@ def make_is_applicable(predicate):
     def is_applicable(goal):
         try:
             return predicate(goal)
-        except unification.UnificationError:
+        except:
             return False
     return is_applicable
 

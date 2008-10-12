@@ -11,26 +11,32 @@ def weaken(list_):
 # rules
 @primitive
 @arg_types('int')
+@applicable(lambda goal: False)
 def left_permutation(goal, index):
     return [sequent(permute(goal.left, index), goal.right)]
 
 @primitive
 @arg_types('int')
+@applicable(lambda goal: False)
 def right_permutation(goal, index):
     return [sequent(goal.left, permute(goal.right, index))]
 
 @primitive
+@applicable(lambda goal: False)
 def left_contraction(goal):
     return [sequent(contract(goal.left), goal.right)]
 
 @primitive
+@applicable(lambda goal: False)
 def right_contraction(goal):
     return [sequent(goal.left, contract(goal.right))]
 
 @primitive
+@applicable(lambda goal: False)
 def left_weakening(goal):
     return [sequent(weaken(goal.left), goal.right)]
 
 @primitive
+@applicable(lambda goal: False)
 def right_weakening(goal):
     return [sequent(goal.left, weaken(goal.right))]

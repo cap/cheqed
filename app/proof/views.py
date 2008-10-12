@@ -55,7 +55,22 @@ class Walker:
         else:
             rules = []
         p_primitive = env.print_proof(primitive)
-        p_goal = env.printer.sequent(goal)
+
+        p_goal = []
+        for i in range(max(len(goal.left), len(goal.right))):
+            if i < len(goal.left):
+                left = env.printer.term(goal.left[i])
+            else:
+                left = ''
+
+            if i < len(goal.right):
+                right = env.printer.term(goal.right[i])
+            else:
+                right = ''
+
+            p_goal.append((left, right))
+                
+#        p_goal = env.printer.sequent(goal)
         self.render('begin_primitive',
                     primitive=p_primitive,
                     goal=p_goal,

@@ -30,7 +30,7 @@ def left_implication(goal):
     return sequence(left_expand('implies'),
                     branch(left_disjunction(),
                            left_negation(),
-                           assumption()))
+                           noop()))
 
 @compound
 def right_implication(goal):
@@ -56,7 +56,7 @@ def left_bidirectional(goal):
                            sequence(left_permutation(1),
                                     branch(left_implication(),
                                            axiom(),
-                                           assumption()))))
+                                           noop()))))
 
 @compound
 @arg_types('term')

@@ -110,8 +110,19 @@ input
 
 .proof_assumption
 {
-  background-color: #DDFFDD;
-  border-bottom: 1px solid #AABBAA;
+  background-color: #EFFFD6;
+  border-bottom: 1px solid black;
+}
+
+.proof_goal_rules
+{
+  color: #AAAAAA;
+}
+
+table
+{
+  background-color: #FFFFCC;
+  border: 1px solid black;
 }
 
 .zebra_0
