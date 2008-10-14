@@ -46,16 +46,7 @@ class Walker:
         template = self.template.get_def(name)
         self.buffer.write(template.render(**kwargs))
 
-    def begin_primitive(self, primitive, goal):
-        assumption_index = self.assumption_index
-        if primitive.func.func_name == 'assumption':
-            rules = env.applicable_rules(goal)
-            rules.sort(key=lambda x: x.rule_name())
-            self.assumption_index += 1
-        else:
-            rules = []
-        p_primitive = env.print_proof(primitive)
-
+    def unpack_goal(self, goal):
         p_goal = []
         for i in range(max(len(goal.left), len(goal.right))):
             if i < len(goal.left):
@@ -69,8 +60,18 @@ class Walker:
                 right = ''
 
             p_goal.append((left, right))
-                
-#        p_goal = env.printer.sequent(goal)
+        return p_goal
+
+    def begin_primitive(self, primitive, goal):
+        assumption_index = self.assumption_index
+        if primitive.func.func_name == 'assumption':
+            rules = env.applicable_rules(goal)
+            rules.sort(key=lambda x: x.rule_name())
+            self.assumption_index += 1
+        else:
+            rules = []
+        p_primitive = env.print_proof(primitive)
+        p_goal = self.unpack_goal(goal)
         self.render('begin_primitive',
                     primitive=p_primitive,
                     goal=p_goal,
@@ -82,7 +83,7 @@ class Walker:
     
     def begin_compound(self, compound, goal):
         p_compound = env.print_proof(compound)
-        p_goal = env.printer.sequent(goal)
+        p_goal = self.unpack_goal(goal)
         self.render('begin_compound',
                     compound=p_compound,
                     goal=p_goal)

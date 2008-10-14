@@ -41,9 +41,11 @@ proof_assumption
           <td>
             ${left}
           </td>
-          <td>
-            |-
-          </td>
+          %if line == 0:
+            <td rowspan="${len(goal)}">
+              |-
+            </td>
+          %endif
           <td>
             ${right}
           </td>
@@ -75,8 +77,8 @@ proof_assumption
                      value="${builder.rule_name()}"/>
               <input type="hidden" name="assumption_index" 
                      value="${assumption_index}"/>
-              <input type="submit" value="apply"/>
-              ${builder.rule_name()}
+              <input type="submit" value="${builder.rule_name()}"/>
+
               %for index, arg_type in enumerate(builder.arg_types()):
                 ${arg_type}
                 <input type="text" name="arg"/>
@@ -97,9 +99,7 @@ proof_assumption
     ${compound}
     <a href="#" onclick="$(this).siblings('.proof_goal').toggle();">goal</a>
     <a href="#" onclick="$(this).siblings('.proof_compound_expansion').toggle();">expansion</a>
-    <div class="proof_goal">
-      ${goal}
-    </div>
+    ${sequent(compound, goal, 0)}
     <div class="proof_compound_expansion">
 </%def>
 
