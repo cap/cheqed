@@ -1,7 +1,8 @@
 from cheqed.core import qterm
 
 class Sequent:
-    name = "sequent"
+    def __init__(self, left=[], right=[]):
+        self.left, self.right = self.infer_types(left[:], right[:])
 
     def __getitem__(self, key):
         if key == 'left':
@@ -27,10 +28,7 @@ class Sequent:
             left = all[:len(left)]
             right = all[len(left):]
         return left, right
-        
-    def __init__(self, left=[], right=[]):
-        self.left, self.right = self.infer_types(left[:], right[:])
-        
+
     def __repr__(self):
         return 'Sequent(%r, %r)' % (self.left, self.right)
 

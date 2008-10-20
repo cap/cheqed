@@ -3,18 +3,6 @@ import re
 from cheqed.core.unification import Unifier, UnificationError
 from cheqed.core import qtype, unification
 
-identifier_re = re.compile(r'[a-zA-Z_=]\w*')
-def is_identifier(ident):
-    return identifier_re.match(ident)
-
-def valid_identifier(ident):
-    if not is_identifier(ident):
-        raise ValueError('"%s" is not a valid identifier.' % ident)
-    return ident
-
-class SubstitutionError(Exception):
-    pass
-
 class Term(object):
     @property
     def role(self):
@@ -101,7 +89,7 @@ def types_unify(types):
         return True
     except UnificationError:
         return False
-    
+
 def match(pattern, term, assignments=None):
     if assignments is None:
         assignments = {}
@@ -168,7 +156,7 @@ class Constant(Term):
     _role = 'constant'
     
     def __init__(self, name, qtype_):
-        self._name = valid_identifier(name)
+        self._name = name
         self._qtype = qtype_
         
     @property
@@ -215,7 +203,7 @@ class Variable(Term):
     _role = 'variable'
     
     def __init__(self, name, qtype_):
-        self._name = valid_identifier(name)
+        self._name = name
         self._qtype = qtype_
 
     @property
