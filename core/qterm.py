@@ -185,9 +185,6 @@ class Constant(Term):
         qtype = self.qtype.substitute(a, b)
         return Constant(self.name, qtype)
 
-    def unify(self, other):
-        return unify(self, other)
-    
     def __repr__(self):
         return 'Constant(%s, %s)' % (self.name, repr(self.qtype))
 
@@ -232,9 +229,6 @@ class Variable(Term):
         qtype = self.qtype.substitute(a, b)
         return Variable(self.name, qtype)
 
-    def unify(self, other):
-        return unify(self, other)
-    
     def __repr__(self):
         return 'Variable(%s, %s)' % (self.name, repr(self.qtype))
     
@@ -314,9 +308,6 @@ class Combination(Term):
         return Combination(self.operator.substitute_type(a, b),
                            self.operand.substitute_type(a, b))
 
-    def unify(self, other):
-        return unify(self, other)
-    
     def __repr__(self):
         return 'Combination(%s, %s)' % (repr(self.operator),
                                         repr(self.operand))
@@ -392,9 +383,6 @@ class Abstraction(Term):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))
 
-    def unify(self, other):
-        return unify(self, other)
-    
     def __repr__(self):
         return 'Abstraction(%s, %s)' % (repr(self.bound), repr(self.body))
 

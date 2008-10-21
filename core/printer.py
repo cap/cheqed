@@ -14,24 +14,25 @@ def match_binder(term):
             term.operand.bound,
             term.operand.body)
 
+def match_separation(term):
+    if term.operator.operator.name != 'separation':
+        raise TypeError
+    return (term.operator.operand,
+            term.operand)
+
 class Printer(object):
     def __init__(self, syntax):
         self.syntax = syntax
 
-    def term(self, term_):
-        print term_
-        return self.print_term(term_)
-
-    def print_separation(term):
-        bound, predicate = match_separation(term)
-    
     def print_term(self, term):
-        if term.is_constant or term.is_variable:
-            return self.print_atom(term)
-        if term.is_abstraction:
-            return self.print_abstraction(term)
-        if term.is_combination:
-            return self.print_combination(term)
+        for method in [self.print_atom,
+                       self.print_abstraction,
+                       self.print_combination]:
+            try:
+                return method(term)
+            except (AttributeError, TypeError):
+                pass
+        raise TypeError
 
     def print_atom(self, atom):
         return atom.name
@@ -65,6 +66,12 @@ class Printer(object):
                                          self.print_atom(bound),
                                          self.print_term(body))
         raise TypeError
+
+    def print_separation(self, term):
+        bound, predicate = match_separation(term)
+        pretty_predicate = qterm.unary_op(predicate, bound).beta_reduce()
+        return '{ %s | %s }' % (self.print_atom(bound),
+                                self.print_combination(pretty_predicate))
     
     def print_function(self, combination):
         def uncurry(term):
@@ -81,12 +88,12 @@ class Printer(object):
 
     def print_combination(self, combination):
         for method in [self.print_unary_operator,
-                       self.print_binary_operator,
                        self.print_binder,
+                       self.print_separation,
+                       self.print_binary_operator,
                        self.print_function]:
             try:
                 return method(combination)
             except (AttributeError, TypeError):
                 pass
-
         raise TypeError

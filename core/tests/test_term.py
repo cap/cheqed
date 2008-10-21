@@ -49,11 +49,6 @@ def test_equality_match():
     assert match['a'].name == 'c'
     assert match['b'].is_abstraction
     
-    
-
-    
-    
-    
 class TestConstant:
     def setup(self):
         self.cls = qterm.Constant
@@ -84,10 +79,10 @@ class TestConstant:
         x_var = self.cls('x', pq('?a'))
         y_var = self.cls('y', pq('?a'))
 
-        assert x_obj.unify(x_obj) == x_obj
-        raises(qtype.UnificationError, x_obj.unify, x_bool)
-        raises(qtype.UnificationError, y_var.unify, x_bool)
-        raises(qtype.UnificationError, x_var.unify, x_bool)
+        assert qterm.unify(x_obj, x_obj) == x_obj
+        raises(qtype.UnificationError, qterm.unify, x_obj, x_bool)
+        raises(qtype.UnificationError, qterm.unify, y_var, x_bool)
+        raises(qtype.UnificationError, qterm.unify, x_var, x_bool)
 
 class TestVariable:
     def setup(self):
@@ -117,12 +112,12 @@ class TestVariable:
         assert self.x_obj != self.x_bool
     
     def test_unify(self):
-        assert self.x_obj.unify(self.x_obj) == self.x_obj
-        assert self.x_var.unify(self.x_bool) == self.x_bool
-        assert self.y_var.unify(self.x_obj) == self.x_obj
+        assert qterm.unify(self.x_obj, self.x_obj) == self.x_obj
+        assert qterm.unify(self.x_var, self.x_bool) == self.x_bool
+        assert qterm.unify(self.y_var, self.x_obj) == self.x_obj
 
-        raises(qtype.UnificationError, self.x_obj.unify, self.x_bool)
-        raises(qtype.UnificationError, self.y_obj.unify, self.x_bool)
+        raises(qtype.UnificationError, qterm.unify, self.x_obj, self.x_bool)
+        raises(qtype.UnificationError, qterm.unify, self.y_obj, self.x_bool)
 
     def test_unify_types(self):
         f1 = qterm.Variable('f', qfun(qvar(), qvar()))
@@ -149,8 +144,6 @@ class TestVariable:
 
         x1u, x2u = qterm.unify_types([x1, x2])
         assert x1u == x2u
-
-        
 
 class TestCombination:
     def setup_method(self, method):
@@ -199,26 +192,26 @@ class TestCombination:
         x = qterm.Variable('x', pq('obj'))
         f_x = qterm.Combination(f, x)
 
-        assert f_x.unify(f_x) == f_x
+        assert qterm.unify(f_x, f_x) == f_x
         
         g = qterm.Constant('g', pq('obj->obj'))
         g_x = qterm.Combination(g, x)
 
-        raises(qtype.UnificationError, f.unify, g)
+        raises(qtype.UnificationError, qterm.unify, f, g)
 
         y = qterm.Variable('y', pq('obj'))
         g_y = qterm.Combination(g, y)
 
-        assert g_x.unify(g_y) == g_y
+        assert qterm.unify(g_x, g_y) == g_y
 
         f_g_y = qterm.Combination(f, g_y)
 
-        assert f_x.unify(f_g_y) == f_g_y
+        assert qterm.unify(f_x, f_g_y) == f_g_y
 
         h = qterm.Variable('h', pq('?a'))
         h_x = qterm.Combination(h, x)
 
-        assert h_x.unify(g_x) == g_x
+        assert qterm.unify(h_x, g_x) == g_x
 
     def test_unify2(self):
         f1 = qterm.Variable('f', qtype.qvar())
@@ -257,17 +250,17 @@ class TestAbstraction:
         phi = qterm.Variable('phi', pq('bool'))
         b_x_phi = qterm.Abstraction(x, phi)
 
-        assert b_x_phi.unify(b_x_phi) == b_x_phi
+        assert qterm.unify(b_x_phi, b_x_phi) == b_x_phi
 
         psi = qterm.Variable('psi', pq('bool'))
         b_x_psi = qterm.Abstraction(x, psi)
         
-        assert b_x_phi.unify(b_x_psi) == b_x_psi
+        assert qterm.unify(b_x_phi, b_x_psi) == b_x_psi
 
         y = qterm.Variable('y', pq('obj'))
         b_y_phi = qterm.Abstraction(y, phi)
 
-        assert b_y_phi.unify(b_x_phi) == b_x_phi
+        assert qterm.unify(b_y_phi, b_x_phi) == b_x_phi
 
 def test_fancy_unification():
     x = qterm.Variable('x', pq('obj'))

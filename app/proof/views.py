@@ -27,7 +27,7 @@ def proof_start(request):
     
     proof = Proof()
     proof.plan = p
-    proof.goal = env.printer.term(goal_term)
+    proof.goal = env.printer.print_term(goal_term)
     proof.save()
 
     return HttpResponseRedirect(reverse(proof_detail,
@@ -50,12 +50,12 @@ class Walker:
         p_goal = []
         for i in range(max(len(goal.left), len(goal.right))):
             if i < len(goal.left):
-                left = env.printer.term(goal.left[i])
+                left = env.printer.print_term(goal.left[i])
             else:
                 left = ''
 
             if i < len(goal.right):
-                right = env.printer.term(goal.right[i])
+                right = env.printer.print_term(goal.right[i])
             else:
                 right = ''
 
@@ -193,7 +193,7 @@ phi(x) or x
             try:
                 parsed = env.parse(term)
                 result = repr(parsed)
-                pretty = env.printer.term(parsed)
+                pretty = env.printer.print_term(parsed)
             except Exception, e:
                 result = str(e)
                 pretty = ''
@@ -209,12 +209,12 @@ phi(x) or x
 def definitions(request):
     defs = []
     for name, term in env.definitions.iteritems():
-        defs.append((name, env.printer.term(term)))
+        defs.append((name, env.printer.print_term(term)))
     defs.sort()
 
     axioms = []
     for name, term in env.axioms.iteritems():
-        axioms.append((name, env.printer.term(term)))
+        axioms.append((name, env.printer.print_term(term)))
     axioms.sort()
 
     context = Context({

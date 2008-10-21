@@ -133,7 +133,7 @@ class Parser:
         try:
             self.lexer = lex.lex(module=self)
             self.parser = yacc.yacc(module=self, start='term',
-                                    debug=0, write_tables=0)
+                                    debug=0, write_tables=1)
             self.type_parser = yacc.yacc(module=self, start='type',
                                          debug=0, write_tables=0)
         finally:

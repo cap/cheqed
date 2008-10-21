@@ -150,7 +150,7 @@ class Environment:
         elif arg_type == 'str':
             return repr(arg)
         elif arg_type == 'term':
-            return repr(self.printer.term(arg))
+            return repr(self.printer.print_term(arg))
         else:
             raise Exception('unrecognized arg_type %r' % arg_type)
 
