@@ -172,7 +172,7 @@ class Constant(Term):
         return set()
 
     @property
-    def variables(self):
+    def atoms(self):
         return set([self])
     
     def substitute(self, a, b, respect_bound=True):
@@ -216,7 +216,7 @@ class Variable(Term):
         return set([self])
 
     @property
-    def variables(self):
+    def atoms(self):
         return set([self])
 
     def substitute(self, a, b, respect_bound=True):
@@ -297,8 +297,8 @@ class Combination(Term):
         return self.operator.free_variables | self.operand.free_variables
 
     @property
-    def variables(self):
-        return self.operator.variables | self.operand.variables
+    def atoms(self):
+        return self.operator.atoms | self.operand.atoms
     
     def substitute(self, a, b, respect_bound=True):
         return Combination(self.operator.substitute(a, b, respect_bound),
@@ -350,8 +350,8 @@ class Abstraction(Term):
         return self.body.free_variables - set([self.bound])
 
     @property
-    def variables(self):
-        return self.body.variables | set([self.bound])
+    def atoms(self):
+        return self.body.atoms | set([self.bound])
     
     def substitute(self, a, b, respect_bound=True):
         if respect_bound:
@@ -362,7 +362,7 @@ class Abstraction(Term):
             body = self.body
             a_names = set([var.name for var in a.free_variables])
             if bound.name in a_names:
-                names = set([var.name for var in body.variables]) \
+                names = set([var.name for var in body.atoms]) \
                         | a_names
                 new_name = bound.name
                 i = 1
@@ -383,6 +383,7 @@ class Abstraction(Term):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))
 
+    
     def __repr__(self):
         return 'Abstraction(%s, %s)' % (repr(self.bound), repr(self.body))
 

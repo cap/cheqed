@@ -41,7 +41,7 @@ class Unifier:
 
     def unified_subs(self):
         unifier = unify(self.subs, lambda x: x.is_variable,
-                        lambda x, y: x in y.variables)
+                        lambda x, y: x in y.atoms)
         return unifier
     
     def apply(self, other):

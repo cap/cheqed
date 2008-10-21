@@ -66,7 +66,7 @@ class QTypeVariable(object):
             return False
 
     @property
-    def variables(self):
+    def atoms(self):
         return set([self])
         
     @property
@@ -107,9 +107,6 @@ class QType(object):
     _arity = {
         'obj': 0,
         'bool': 0,
-        'int': 0,
-        'sequent': 0,
-        'unit': 0,
         'fun': 2,
         }
 
@@ -126,10 +123,12 @@ class QType(object):
         self._args = args
 
     @property
-    def variables(self):
+    def atoms(self):
         result = set()
+        if len(self._args) == 0:
+            result.add(self)
         for arg in self.args:
-            result.update(arg.variables)
+            result.update(arg.atoms)
         return result
         
     @property
@@ -157,7 +156,7 @@ class QType(object):
     def __repr__(self):
         if self.name == 'fun':
             return '(%s->%s)' % (str(self.args[0]), str(self.args[1]))
-        elif self.name in ['obj', 'bool', 'int', 'unit', 'sequent']:
+        elif self.name in ['obj', 'bool']:
             return self.name
         else:
             return NotImplemented
@@ -176,23 +175,11 @@ class QType(object):
         
         return result ^ hash(self.name)
 
-def qclass():
-    return QType('class', [])
-
 def qobj():
     return QType('obj', [])
 
 def qbool():
     return QType('bool', [])
-
-def qunit():
-    return QType('unit', [])
-
-def qint():
-    return QType('int', [])
-
-def qsequent():
-    return QType('sequent', [])
 
 def qfun(a, b):
     return QType('fun', [a, b])

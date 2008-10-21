@@ -52,12 +52,7 @@ def test_equality_match():
 class TestConstant:
     def setup(self):
         self.cls = qterm.Constant
-        
-    def test_qtype(self):
-        assert self.cls('x', pq('obj')).qtype == pq('obj')
-        assert self.cls('x', pq('bool')).qtype == pq('bool')
-        assert self.cls('x', pq('bool->obj')).qtype == pq('bool->obj')
-        
+
     def test_free_variables(self):
         assert self.cls('x', pq('obj')).free_variables == set()
         assert self.cls('x', pq('bool')).free_variables == set()
