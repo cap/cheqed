@@ -158,16 +158,8 @@ def unify_types(terms):
 
 class Constant(Term):
     def __init__(self, name, qtype_):
-        self._name = name
-        self._qtype = qtype_
-        
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def qtype(self):
-        return self._qtype
+        self.name = name
+        self.qtype = qtype_
 
     def substitute(self, a, b, respect_bound=True):
         if self == b:
@@ -180,7 +172,7 @@ class Constant(Term):
         return Constant(self.name, qtype)
 
     def __repr__(self):
-        return 'Constant(%s, %s)' % (self.name, repr(self.qtype))
+        return 'Constant(%r, %r)' % (self.name, self.qtype)
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
@@ -192,16 +184,8 @@ class Constant(Term):
     
 class Variable(Term):
     def __init__(self, name, qtype_):
-        self._name = name
-        self._qtype = qtype_
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def qtype(self):
-        return self._qtype
+        self.name = name
+        self.qtype = qtype_
 
     def substitute(self, a, b, respect_bound=True):
         if self == b:
@@ -214,7 +198,7 @@ class Variable(Term):
         return Variable(self.name, qtype)
 
     def __repr__(self):
-        return 'Variable(%s, %s)' % (self.name, repr(self.qtype))
+        return 'Variable(%r, %r)' % (self.name, self.qtype)
     
     def __eq__(self, other):
         return (self.__class__ == other.__class__
@@ -260,15 +244,7 @@ class Combination(Term):
         return operator, operand
         
     def __init__(self, operator, operand):
-        self._operator, self._operand = self.infer_types(operator, operand)
-
-    @property
-    def operator(self):
-        return self._operator
-    
-    @property
-    def operand(self):
-        return self._operand
+        self.operator, self.operand = self.infer_types(operator, operand)
 
     @property
     def qtype(self):
@@ -283,8 +259,7 @@ class Combination(Term):
                            self.operand.substitute_type(a, b))
 
     def __repr__(self):
-        return 'Combination(%s, %s)' % (repr(self.operator),
-                                        repr(self.operand))
+        return 'Combination(%r, %r)' % (self.operator, self.operand)
     
     def __eq__(self, other):
         return (self.__class__ == other.__class__
@@ -300,18 +275,10 @@ class Abstraction(Term):
         return unify_types([bound, body])
     
     def __init__(self, bound, body):
-        self._bound, self._body = self.infer_types(bound, body)
+        self.bound, self.body = self.infer_types(bound, body)
         
-        if not is_variable(self._bound):
+        if not is_variable(self.bound):
             raise qtype.UnificationError('Bound terms must be variables.')
-
-    @property
-    def bound(self):
-        return self._bound
-
-    @property
-    def body(self):
-        return self._body
 
     @property
     def qtype(self):
@@ -349,7 +316,7 @@ class Abstraction(Term):
 
     
     def __repr__(self):
-        return 'Abstraction(%s, %s)' % (repr(self.bound), repr(self.body))
+        return 'Abstraction(%r, %r)' % (self.bound, self.body)
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
