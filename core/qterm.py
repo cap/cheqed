@@ -37,6 +37,47 @@ def atoms(term):
     elif is_abstraction(term):
         return atoms(term.body) | set([term.bound])
 
+def replace(term, a, b):
+    if is_atom(term):
+        if term == b:
+            return a
+        else:
+            return term
+    elif is_combination(term):
+        return Combination(replace(term.operator, a, b),
+                           replace(term.operand, a, b)).beta_reduce()
+    elif is_abstraction(term):
+        return Abstraction(replace(term.bound, a, b),
+                           replace(term.body, a, b))
+
+def substitute(term, a, b):
+    if is_atom(term):
+        if term == b:
+            return a
+        else:
+            return term
+    elif is_combination(term):
+        return Combination(substitute(term.operator, a, b),
+                           substitute(term.operand, a, b)).beta_reduce()
+    elif is_abstraction(term):
+        if term.bound in free_variables(b):
+            return term
+        bound = term.bound
+        body = term.body
+        a_names = set([var.name for var in free_variables(a)])
+        if bound.name in a_names:
+            names = set([var.name for var in atoms(body)]) \
+                | a_names
+            new_name = bound.name
+            i = 1
+            while new_name in names:
+                new_name = bound.name + str(i)
+                i += 1
+            new_bound = Variable(new_name, bound.qtype)
+            body = substitute(body, new_bound, bound)
+            bound = new_bound
+        return Abstraction(bound, substitute(body, a, b))
+    
 def make_atom_unifier(atom, other, unifier=None):
     if unifier is None:
         unifier = Unifier()
@@ -83,8 +124,8 @@ def make_unifier(term, other, unifier=None):
 def unify(term, other):
     unifier = make_unifier(term, other)
     for key, value in unifier.unified_subs(is_variable, atoms).iteritems():
-        term = term.substitute(value, key, respect_bound=False)
-        other = other.substitute(value, key, respect_bound=False)
+        term = replace(term, value, key)
+        other = replace(other, value, key)
 
     term, other = unify_types([term, other])
 
@@ -138,12 +179,6 @@ class Constant(object):
         self.name = name
         self.qtype = qtype_
 
-    def substitute(self, a, b, respect_bound=True):
-        if self == b:
-            return a
-        else:
-            return self
-
     def substitute_type(self, a, b):
         qtype = self.qtype.substitute(a, b)
         return Constant(self.name, qtype)
@@ -163,12 +198,6 @@ class Variable(object):
     def __init__(self, name, qtype_):
         self.name = name
         self.qtype = qtype_
-
-    def substitute(self, a, b, respect_bound=True):
-        if self == b:
-            return a
-        else:
-            return self
 
     def substitute_type(self, a, b):
         qtype = self.qtype.substitute(a, b)
@@ -191,8 +220,9 @@ class Variable(object):
 class Combination(object):
     def beta_reduce(self):
         if is_abstraction(self.operator):
-            return self.operator.body.substitute(self.operand,
-                                                 self.operator.bound)
+            return substitute(self.operator.body,
+                              self.operand,
+                              self.operator.bound)
         return self
 
     @staticmethod
@@ -227,10 +257,6 @@ class Combination(object):
     def qtype(self):
         return self.operator.qtype.args[1]
     
-    def substitute(self, a, b, respect_bound=True):
-        return Combination(self.operator.substitute(a, b, respect_bound),
-                           self.operand.substitute(a, b, respect_bound)).beta_reduce()
-
     def substitute_type(self, a, b):
         return Combination(self.operator.substitute_type(a, b),
                            self.operand.substitute_type(a, b))
@@ -261,32 +287,6 @@ class Abstraction(object):
     def qtype(self):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
     
-    def substitute(self, a, b, respect_bound=True):
-        if respect_bound:
-            if self.bound in free_variables(b):
-                return self
-
-            bound = self.bound
-            body = self.body
-            a_names = set([var.name for var in free_variables(a)])
-            if bound.name in a_names:
-                names = set([var.name for var in atoms(body)]) \
-                        | a_names
-                new_name = bound.name
-                i = 1
-                while new_name in names:
-                    new_name = bound.name + str(i)
-                    i += 1
-                new_bound = Variable(new_name, bound.qtype)
-                body = body.substitute(new_bound, bound)
-                bound = new_bound
-                
-            return Abstraction(bound,
-                               body.substitute(a, b, respect_bound))
-        else:
-            return Abstraction(self.bound.substitute(a, b, respect_bound),
-                               self.body.substitute(a, b, respect_bound))
-
     def substitute_type(self, a, b):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))

@@ -194,7 +194,7 @@ class TestAbstraction:
         phi = Variable('phi', qfun(qobj(), qbool()))
         phi_y = Combination(phi, y)
         a = Abstraction(x, phi_y)
-        b = a.substitute(x, y)
+        b = qterm.substitute(a, x, y)
         assert b.bound != x
 
     def test_equality(self):
@@ -373,7 +373,7 @@ def test_substitute():
     x = pt(r'x:obj')
     b = pt(r'b:obj')
 
-    result = term.substitute(b, x)
+    result = qterm.substitute(term, b, x)
 
     assert result == term
 
