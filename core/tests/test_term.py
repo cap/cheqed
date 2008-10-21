@@ -2,7 +2,7 @@ from py.test import raises
 
 from cheqed.core import environment, qterm, qtype, unification
 from cheqed.core.qtype import qbool, qobj, qfun, qvar
-from cheqed.core.qterm import Variable, Constant, Abstraction, Combination
+from cheqed.core.qterm import Variable, Constant, Abstraction, Combination, free_variables
 
 def setup_module(module):
     env = environment.load_modules('logic', 'set')
@@ -54,8 +54,8 @@ class TestConstant:
         self.cls = qterm.Constant
 
     def test_free_variables(self):
-        assert self.cls('x', pq('obj')).free_variables == set()
-        assert self.cls('x', pq('bool')).free_variables == set()
+        assert free_variables(self.cls('x', pq('obj'))) == set()
+        assert free_variables(self.cls('x', pq('bool'))) == set()
 
     def test_substitute(self):
         pass
@@ -96,7 +96,7 @@ class TestVariable:
         assert self.x_bool_obj.qtype == pq('bool->obj')
         
     def test_free_variables(self):
-        assert self.x_obj.free_variables == set([self.x_obj])
+        assert free_variables(self.x_obj) == set([self.x_obj])
 
     def test_substitute(self):
         pass
@@ -159,9 +159,9 @@ class TestCombination:
         g = qterm.Constant('g', pq('obj->obj'))
         x = qterm.Variable('x', pq('obj'))
 
-        assert qterm.Combination(f, x).free_variables == set([x])
-        assert (qterm.Combination(f, qterm.Combination(g, x)).free_variables
-                == set([x]))
+        assert free_variables(qterm.Combination(f, x)) == set([x])
+        assert free_variables(qterm.Combination(f, qterm.Combination(g, x))) \
+            == set([x])
 
     def test_substitute(self):
         pass
@@ -410,7 +410,7 @@ def test_ops():
 
     rx = qterm.Combination(qrel, qx)
 
-    assert rx.free_variables == set([qx])
+    assert free_variables(rx) == set([qx])
 
 from cheqed.core.qterm import Constant, Variable, Combination, Abstraction
 

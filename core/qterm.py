@@ -1,7 +1,23 @@
-import re
-
 from cheqed.core.unification import Unifier, UnificationError
 from cheqed.core import qtype, unification
+
+def is_constant(term): return isinstance(term, Constant)
+def is_variable(term): return isinstance(term, Variable)
+def is_combination(term): return isinstance(term, Combination)
+def is_abstraction(term): return isinstance(term, Abstraction)
+def is_atom(term): return is_constant(term) or is_variable(term)
+
+def free_variables(term):
+    if is_constant(term):
+        return set()
+    elif is_variable(term):
+        return set([term])
+    elif is_combination(term):
+        return free_variables(term.operator) | free_variables(term.operand)
+    elif is_abstraction(term):
+        return free_variables(term.body) - set([term.bound])
+
+
 
 class Term(object):
     @property
@@ -128,7 +144,7 @@ def make_type_unifier(terms, unifier=None):
         
     atoms_by_name = {}
     for term in terms:
-        for atom in term.free_variables:
+        for atom in free_variables(term):
             if atom.name != '=':
                 atoms_by_name.setdefault(atom.name, []).append(atom)
 
@@ -166,10 +182,6 @@ class Constant(Term):
     @property
     def qtype(self):
         return self._qtype
-
-    @property
-    def free_variables(self):
-        return set()
 
     @property
     def atoms(self):
@@ -210,10 +222,6 @@ class Variable(Term):
     @property
     def qtype(self):
         return self._qtype
-
-    @property
-    def free_variables(self):
-        return set([self])
 
     @property
     def atoms(self):
@@ -293,10 +301,6 @@ class Combination(Term):
         return self.operator.qtype.args[1]
 
     @property
-    def free_variables(self):
-        return self.operator.free_variables | self.operand.free_variables
-
-    @property
     def atoms(self):
         return self.operator.atoms | self.operand.atoms
     
@@ -346,21 +350,17 @@ class Abstraction(Term):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
 
     @property
-    def free_variables(self):
-        return self.body.free_variables - set([self.bound])
-
-    @property
     def atoms(self):
         return self.body.atoms | set([self.bound])
     
     def substitute(self, a, b, respect_bound=True):
         if respect_bound:
-            if self.bound in b.free_variables:
+            if self.bound in free_variables(b):
                 return self
 
             bound = self.bound
             body = self.body
-            a_names = set([var.name for var in a.free_variables])
+            a_names = set([var.name for var in free_variables(a)])
             if bound.name in a_names:
                 names = set([var.name for var in body.atoms]) \
                         | a_names
