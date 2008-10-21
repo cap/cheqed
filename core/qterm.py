@@ -17,6 +17,13 @@ def free_variables(term):
     elif is_abstraction(term):
         return free_variables(term.body) - set([term.bound])
 
+def atoms(term):
+    if is_atom(term):
+        return set([term])
+    elif is_combination(term):
+        return atoms(term.operator) | atoms(term.operand)
+    elif is_abstraction(term):
+        return atoms(term.body) | set([term.bound])
 
 
 class Term(object):
@@ -85,7 +92,7 @@ def make_unifier(term, other, unifier=None):
 
 def unify(term, other):
     unifier = make_unifier(term, other)
-    for key, value in unifier.unified_subs().iteritems():
+    for key, value in unifier.unified_subs(atoms).iteritems():
         term = term.substitute(value, key, respect_bound=False)
         other = other.substitute(value, key, respect_bound=False)
 
@@ -183,10 +190,6 @@ class Constant(Term):
     def qtype(self):
         return self._qtype
 
-    @property
-    def atoms(self):
-        return set([self])
-    
     def substitute(self, a, b, respect_bound=True):
         if self == b:
             return a
@@ -222,10 +225,6 @@ class Variable(Term):
     @property
     def qtype(self):
         return self._qtype
-
-    @property
-    def atoms(self):
-        return set([self])
 
     def substitute(self, a, b, respect_bound=True):
         if self == b:
@@ -299,10 +298,6 @@ class Combination(Term):
     @property
     def qtype(self):
         return self.operator.qtype.args[1]
-
-    @property
-    def atoms(self):
-        return self.operator.atoms | self.operand.atoms
     
     def substitute(self, a, b, respect_bound=True):
         return Combination(self.operator.substitute(a, b, respect_bound),
@@ -348,10 +343,6 @@ class Abstraction(Term):
     @property
     def qtype(self):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
-
-    @property
-    def atoms(self):
-        return self.body.atoms | set([self.bound])
     
     def substitute(self, a, b, respect_bound=True):
         if respect_bound:
@@ -362,7 +353,7 @@ class Abstraction(Term):
             body = self.body
             a_names = set([var.name for var in free_variables(a)])
             if bound.name in a_names:
-                names = set([var.name for var in body.atoms]) \
+                names = set([var.name for var in atoms(body)]) \
                         | a_names
                 new_name = bound.name
                 i = 1
