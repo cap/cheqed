@@ -1,11 +1,23 @@
 from cheqed.core.unification import Unifier, UnificationError
 from cheqed.core import qtype, unification
 
-def is_constant(term): return isinstance(term, Constant)
-def is_variable(term): return isinstance(term, Variable)
-def is_combination(term): return isinstance(term, Combination)
-def is_abstraction(term): return isinstance(term, Abstraction)
-def is_atom(term): return is_constant(term) or is_variable(term)
+def is_constant(term):
+    return isinstance(term, Constant)
+
+def is_variable(term):
+    return isinstance(term, Variable)
+
+def is_combination(term):
+    return isinstance(term, Combination)
+
+def is_abstraction(term):
+    return isinstance(term, Abstraction)
+
+def is_atom(term):
+    return is_constant(term) or is_variable(term)
+
+def is_term(term):
+    return is_atom(term) or is_combination(term) or is_abstraction(term)
 
 def free_variables(term):
     if is_constant(term):
@@ -24,9 +36,6 @@ def atoms(term):
         return atoms(term.operator) | atoms(term.operand)
     elif is_abstraction(term):
         return atoms(term.body) | set([term.bound])
-
-class Term(object):
-    pass
 
 def make_atom_unifier(atom, other, unifier=None):
     if unifier is None:
@@ -124,7 +133,7 @@ def unify_types(terms):
 
     return terms
 
-class Constant(Term):
+class Constant(object):
     def __init__(self, name, qtype_):
         self.name = name
         self.qtype = qtype_
@@ -150,7 +159,7 @@ class Constant(Term):
     def __ne__(self, other):
         return not self == other
     
-class Variable(Term):
+class Variable(object):
     def __init__(self, name, qtype_):
         self.name = name
         self.qtype = qtype_
@@ -179,7 +188,7 @@ class Variable(Term):
     def __hash__(self):
         return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
 
-class Combination(Term):
+class Combination(object):
     def beta_reduce(self):
         if is_abstraction(self.operator):
             return self.operator.body.substitute(self.operand,
@@ -237,7 +246,7 @@ class Combination(Term):
     def __ne__(self, other):
         return not self == other
 
-class Abstraction(Term):
+class Abstraction(object):
     @staticmethod
     def infer_types(bound, body):
         return unify_types([bound, body])

@@ -3,6 +3,7 @@ import os.path
 from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, unification
 from cheqed.core import trace
 from cheqed.core.match import match_term
+from cheqed.core.qterm import is_term
 
 def arg_types(*args):
     def assign_types(rule):
@@ -132,7 +133,7 @@ class Environment:
         elif arg_type == 'str':
             return str(arg)
         elif arg_type == 'term':
-            if isinstance(arg, qterm.Term):
+            if is_term(arg):
                 return arg
             return self.parse(arg)
         else:
