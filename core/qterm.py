@@ -77,6 +77,20 @@ def substitute(term, a, b):
             body = substitute(body, new_bound, bound)
             bound = new_bound
         return Abstraction(bound, substitute(body, a, b))
+
+def substitute_type(term, a, b):
+    if is_constant(term):
+        qtype = term.qtype.substitute(a, b)
+        return Constant(term.name, qtype)
+    elif is_variable(term):
+        qtype = term.qtype.substitute(a, b)
+        return Variable(term.name, qtype)
+    elif is_combination(term):
+        return Combination(substitute_type(term.operator, a, b),
+                           substitute_type(term.operand, a, b))    
+    elif is_abstraction(term):
+        return Abstraction(substitute_type(term.bound, a, b),
+                           substitute_type(term.body, a, b))
     
 def make_atom_unifier(atom, other, unifier=None):
     if unifier is None:
@@ -170,7 +184,7 @@ def unify_types(terms):
 
     for key, value in unifier.unified_subs().iteritems():
         for i in range(len(terms)):
-            terms[i] = terms[i].substitute_type(value, key)
+            terms[i] = substitute_type(terms[i], value, key)
 
     return terms
 
@@ -178,10 +192,6 @@ class Constant(object):
     def __init__(self, name, qtype_):
         self.name = name
         self.qtype = qtype_
-
-    def substitute_type(self, a, b):
-        qtype = self.qtype.substitute(a, b)
-        return Constant(self.name, qtype)
 
     def __repr__(self):
         return 'Constant(%r, %r)' % (self.name, self.qtype)
@@ -198,10 +208,6 @@ class Variable(object):
     def __init__(self, name, qtype_):
         self.name = name
         self.qtype = qtype_
-
-    def substitute_type(self, a, b):
-        qtype = self.qtype.substitute(a, b)
-        return Variable(self.name, qtype)
 
     def __repr__(self):
         return 'Variable(%r, %r)' % (self.name, self.qtype)
@@ -228,17 +234,17 @@ class Combination(object):
     @staticmethod
     def infer_types(operator, operand):
         if operator.qtype.is_variable:
-            operator = operator.substitute_type(qtype.qfun(qtype.qvar(),
-                                                           qtype.qvar()),
-                                                operator.qtype)
+            operator = substitute_type(operator,
+                                       qtype.qfun(qtype.qvar(), qtype.qvar()),
+                                       operator.qtype)
 
         if operator.qtype.name != 'fun':
             raise qtype.UnificationError('Operators must be functions.')
         
         unifier = qtype.make_unifier([operator.qtype.args[0], operand.qtype])
         for key, value in unifier.unified_subs().iteritems():
-            operator = operator.substitute_type(value, key)
-            operand = operand.substitute_type(value, key)
+            operator = substitute_type(operator, value, key)
+            operand = substitute_type(operand, value, key)
 
         operator, operand = unify_types([operator, operand])
         
@@ -257,10 +263,6 @@ class Combination(object):
     def qtype(self):
         return self.operator.qtype.args[1]
     
-    def substitute_type(self, a, b):
-        return Combination(self.operator.substitute_type(a, b),
-                           self.operand.substitute_type(a, b))
-
     def __repr__(self):
         return 'Combination(%r, %r)' % (self.operator, self.operand)
     
@@ -286,11 +288,6 @@ class Abstraction(object):
     @property
     def qtype(self):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
-    
-    def substitute_type(self, a, b):
-        return Abstraction(self.bound.substitute_type(a, b),
-                           self.body.substitute_type(a, b))
-
     
     def __repr__(self):
         return 'Abstraction(%r, %r)' % (self.bound, self.body)
