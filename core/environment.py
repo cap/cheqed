@@ -99,7 +99,7 @@ class Environment:
 
     def add_constant(self, constant):
         atom = self.parse(constant)
-        if atom.is_variable:
+        if qterm.is_variable(atom):
             atom = qterm.Constant(atom.name, atom.qtype)
         self.constants[atom.name] = atom
 
@@ -114,11 +114,11 @@ class Environment:
 
     def add_definition(self, string):
         term = self.parse(string)
-        assert term.is_combination
-        assert term.operator.is_combination
+        assert qterm.is_combination(term)
+        assert qterm.is_combination(term.operator)
         assert term.operator.operator.name == '='
-        assert term.operator.operand.is_variable \
-            or term.operator.operand.is_constant
+        assert qterm.is_variable(term.operator.operand) \
+            or qterm.is_constant(term.operator.operand)
         name = term.operator.operand.name
         self.definitions[name] = term
 

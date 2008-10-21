@@ -39,8 +39,10 @@ class Unifier:
     def add_subs(self, a, b):
         self.subs.append((a, b))
 
-    def unified_subs(self, atoms=lambda x: x.atoms):
-        unifier = unify(self.subs, lambda x: x.is_variable,
+    def unified_subs(self,
+                     is_variable=lambda x: x.is_variable,
+                     atoms=lambda x: x.atoms):
+        unifier = unify(self.subs, is_variable,
                         lambda x, y: x in atoms(y))
         return unifier
     

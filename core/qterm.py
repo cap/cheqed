@@ -25,27 +25,10 @@ def atoms(term):
     elif is_abstraction(term):
         return atoms(term.body) | set([term.bound])
 
-
 class Term(object):
     @property
     def role(self):
         return self._role
-
-    @property
-    def is_constant(self):
-        return self.role == 'constant'
-
-    @property
-    def is_variable(self):
-        return self.role == 'variable'
-
-    @property
-    def is_combination(self):
-        return self.role == 'combination'
-
-    @property
-    def is_abstraction(self):
-        return self.role == 'abstraction'
 
 def make_atom_unifier(atom, other, unifier=None):
     if unifier is None:
@@ -56,7 +39,7 @@ def make_atom_unifier(atom, other, unifier=None):
             or atom.name == '='):
             return unifier
 
-    if atom.is_variable:
+    if is_variable(atom):
         try:
             qtype.unify([atom.qtype, other.qtype])
         except UnificationError, ue:
@@ -71,18 +54,18 @@ def make_unifier(term, other, unifier=None):
     if unifier is None:
         unifier = Unifier()
 
-    if term.is_constant or term.is_variable:
+    if is_constant(term) or is_variable(term):
         return make_atom_unifier(term, other, unifier)
         
-    if other.is_constant or other.is_variable:
+    if is_constant(other) or is_variable(other):
         return make_atom_unifier(other, term, unifier)
     
-    if term.is_combination and other.is_combination:
+    if is_combination(term) and is_combination(other):
         unifier = make_unifier(term.operator, other.operator, unifier)
         unifier = make_unifier(term.operand, other.operand, unifier)
         return unifier
 
-    if term.is_abstraction and other.is_abstraction:
+    if is_abstraction(term) and is_abstraction(other):
         unifier = make_unifier(term.bound, other.bound, unifier)
         unifier = make_unifier(term.body, other.body, unifier)
         return unifier
@@ -92,7 +75,7 @@ def make_unifier(term, other, unifier=None):
 
 def unify(term, other):
     unifier = make_unifier(term, other)
-    for key, value in unifier.unified_subs(atoms).iteritems():
+    for key, value in unifier.unified_subs(is_variable, atoms).iteritems():
         term = term.substitute(value, key, respect_bound=False)
         other = other.substitute(value, key, respect_bound=False)
 
@@ -117,7 +100,7 @@ def match(pattern, term, assignments=None):
     if assignments is None:
         assignments = {}
 
-    if pattern.is_variable and types_unify([pattern.qtype, term.qtype]):
+    if is_variable(pattern) and types_unify([pattern.qtype, term.qtype]):
         if pattern.name in assignments:
             if assignments[pattern.name] == term:
                 return assignments
@@ -127,18 +110,18 @@ def match(pattern, term, assignments=None):
         assignments[pattern.name] = term
         return assignments
 
-    if pattern.is_constant and term.is_constant:
+    if is_constant(pattern) and is_constant(term):
         if (pattern.name == term.name
             and types_unify([pattern.qtype, term.qtype])):
             return assignments
         raise UnificationError('Cannot match %s with %s.' % (pattern, term))
 
-    if pattern.is_combination and term.is_combination:
+    if is_combination(pattern) and is_combination(term):
         assignments = match(pattern.operator, term.operator, assignments)
         assignments = match(pattern.operand, term.operand, assignments)
         return assignments
 
-    if pattern.is_abstraction and term.is_abstraction:
+    if is_abstraction(pattern) and is_abstraction(term):
         assignments = match(pattern.bound, term.bound, assignments)
         assignments = match(pattern.body, term.body, assignments)
         return assignments
@@ -254,7 +237,7 @@ class Combination(Term):
     _role = 'combination'
 
     def beta_reduce(self):
-        if self.operator.is_abstraction:
+        if is_abstraction(self.operator):
             return self.operator.body.substitute(self.operand,
                                                  self.operator.bound)
         return self

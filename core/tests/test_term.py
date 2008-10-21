@@ -47,7 +47,7 @@ def test_equality_match():
     term = pt(r'c = (\x.phi)')
     match = qterm.match(pattern, term)
     assert match['a'].name == 'c'
-    assert match['b'].is_abstraction
+    assert qterm.is_abstraction(match['b'])
     
 class TestConstant:
     def setup(self):
