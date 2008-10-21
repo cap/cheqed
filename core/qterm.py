@@ -26,9 +26,7 @@ def atoms(term):
         return atoms(term.body) | set([term.bound])
 
 class Term(object):
-    @property
-    def role(self):
-        return self._role
+    pass
 
 def make_atom_unifier(atom, other, unifier=None):
     if unifier is None:
@@ -159,8 +157,6 @@ def unify_types(terms):
     return terms
 
 class Constant(Term):
-    _role = 'constant'
-    
     def __init__(self, name, qtype_):
         self._name = name
         self._qtype = qtype_
@@ -187,7 +183,7 @@ class Constant(Term):
         return 'Constant(%s, %s)' % (self.name, repr(self.qtype))
 
     def __eq__(self, other):
-        return (self.role == other.role
+        return (self.__class__ == other.__class__
                 and self.name == other.name
                 and self.qtype == other.qtype)
 
@@ -195,8 +191,6 @@ class Constant(Term):
         return not self == other
     
 class Variable(Term):
-    _role = 'variable'
-    
     def __init__(self, name, qtype_):
         self._name = name
         self._qtype = qtype_
@@ -223,7 +217,7 @@ class Variable(Term):
         return 'Variable(%s, %s)' % (self.name, repr(self.qtype))
     
     def __eq__(self, other):
-        return (self.role == other.role
+        return (self.__class__ == other.__class__
                 and self.name == other.name
                 and self.qtype == other.qtype)
 
@@ -231,11 +225,9 @@ class Variable(Term):
         return not self == other
 
     def __hash__(self):
-        return hash(self.role) ^ hash(self.name) ^ hash(self.qtype)
+        return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
 
 class Combination(Term):
-    _role = 'combination'
-
     def beta_reduce(self):
         if is_abstraction(self.operator):
             return self.operator.body.substitute(self.operand,
@@ -295,7 +287,7 @@ class Combination(Term):
                                         repr(self.operand))
     
     def __eq__(self, other):
-        return (self.role == other.role
+        return (self.__class__ == other.__class__
                 and self.operator == other.operator
                 and self.operand == other.operand)
 
@@ -303,8 +295,6 @@ class Combination(Term):
         return not self == other
 
 class Abstraction(Term):
-    _role = 'abstraction'
-
     @staticmethod
     def infer_types(bound, body):
         return unify_types([bound, body])
@@ -312,7 +302,7 @@ class Abstraction(Term):
     def __init__(self, bound, body):
         self._bound, self._body = self.infer_types(bound, body)
         
-        if self._bound.role != 'variable':
+        if not is_variable(self._bound):
             raise qtype.UnificationError('Bound terms must be variables.')
 
     @property
@@ -362,7 +352,7 @@ class Abstraction(Term):
         return 'Abstraction(%s, %s)' % (repr(self.bound), repr(self.body))
 
     def __eq__(self, other):
-        return (self.role == other.role
+        return (self.__class__ == other.__class__
                 and self.bound == other.bound
                 and self.body == other.body)
 
