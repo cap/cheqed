@@ -8,46 +8,6 @@ def setup_module(module):
     env = environment.load_modules('logic', 'set')
     module.pt = env.parser.parse
     module.pq = env.parser.parse_type
-
-def test_match1():
-    x_const = qterm.Constant('x', pq('obj'))
-    x_var = qterm.Variable('x', pq('obj'))
-
-    assert qterm.match(x_var, x_const) == {'x':x_const}
-    raises(unification.UnificationError,
-           qterm.match, x_const, x_var)
-    
-    f = qterm.Constant('f', pq('obj->obj'))
-    y = qterm.Variable('y', pq('obj'))
-    f_x = qterm.Combination(f, x_var)
-    f_y = qterm.Combination(f, y)
-    assert qterm.match(f_x, f_y) == {'x':y}
-    raises(unification.UnificationError,
-           qterm.match, f_x, y)
-
-def test_match():
-    a = pt(r'a:bool')
-    not_a = pt(r'not a')
-
-    raises(unification.UnificationError, qterm.match, not_a, a)
-
-def test_equality_match():
-    pattern = pt(r'a = b')
-
-    term = pt(r'c = d')
-    match = qterm.match(pattern, term)
-    assert match['a'].name == 'c'
-    assert match['b'].name == 'd'
-
-    term = pt(r'c = c')
-    match = qterm.match(pattern, term)
-    assert match['a'].name == 'c'
-    assert match['b'].name == 'c'
-
-    term = pt(r'c = (\x.phi)')
-    match = qterm.match(pattern, term)
-    assert match['a'].name == 'c'
-    assert qterm.is_abstraction(match['b'])
     
 class TestConstant:
     def setup(self):
@@ -288,12 +248,6 @@ def test_fancy_unification():
     d = pt('f(h(w:bool), g(y:bool))')
     assert qterm.unify(c, d) == c
 
-def test_match():
-    a = pt('f:obj->obj->obj(x, g(y))')
-    b = pt('f(x, x)')
-    raises(unification.UnificationError, qterm.match, b, a)
-    c = pt('f(x, y)')
-    
 class TestUnification:
     def test_atom(self):
         x_obj = qterm.Constant('x', pq('obj'))

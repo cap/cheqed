@@ -2,6 +2,7 @@ import os.path
 
 from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, unification
 from cheqed.core import trace
+from cheqed.core.match import match_term
 
 def arg_types(*args):
     def assign_types(rule):
@@ -214,7 +215,7 @@ class Environment:
 
     def match(self, term, string):
         pattern = self.parse(string)
-        return qterm.match(pattern, term)
+        return match_term(pattern, term)
 
     @arg_types('str')
     def left_expand(self, goal, name):

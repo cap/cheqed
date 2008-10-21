@@ -94,38 +94,6 @@ def types_unify(types):
     except UnificationError:
         return False
 
-def match(pattern, term, assignments=None):
-    if assignments is None:
-        assignments = {}
-
-    if is_variable(pattern) and types_unify([pattern.qtype, term.qtype]):
-        if pattern.name in assignments:
-            if assignments[pattern.name] == term:
-                return assignments
-            raise UnificationError('Cannot match %s with both %s and %s.'
-                                   % (pattern, term,
-                                      assignments[pattern.name]))
-        assignments[pattern.name] = term
-        return assignments
-
-    if is_constant(pattern) and is_constant(term):
-        if (pattern.name == term.name
-            and types_unify([pattern.qtype, term.qtype])):
-            return assignments
-        raise UnificationError('Cannot match %s with %s.' % (pattern, term))
-
-    if is_combination(pattern) and is_combination(term):
-        assignments = match(pattern.operator, term.operator, assignments)
-        assignments = match(pattern.operand, term.operand, assignments)
-        return assignments
-
-    if is_abstraction(pattern) and is_abstraction(term):
-        assignments = match(pattern.bound, term.bound, assignments)
-        assignments = match(pattern.body, term.body, assignments)
-        return assignments
-
-    raise UnificationError('Cannot match %s with %s.' % (pattern, term))
-
 def make_type_unifier(terms, unifier=None):
     if unifier is None:
         unifier = unification.Unifier()
