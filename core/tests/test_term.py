@@ -25,7 +25,10 @@ class TestConstant_:
         assert_not_equal(Constant('a', 'obj'),
                          Variable('a', 'obj'))
 
-        
+    def test_set_membership(self):
+        assert_true(Constant('a', 'obj') in set([Constant('a', 'obj')]))
+
+
 class TestVariable_:
     def test_immutable(self):
         var = Variable('a', 'obj')
@@ -45,6 +48,9 @@ class TestVariable_:
         assert_not_equal(Variable('a', 'obj'),
                          Constant('a', 'obj'))
 
+    def test_set_membership(self):
+        assert_true(Variable('a', 'obj') in set([Variable('a', 'obj')]))
+
 
 class TestCombination_:
     def test_immutable(self):
@@ -62,7 +68,10 @@ class TestCombination_:
         assert_not_equal(Combination('a', 'b'),
                          Combination('a', 'c'))
 
+    def test_set_membership(self):
+        assert_true(Combination('a', 'b') in set([Combination('a', 'b')]))
 
+        
 class TestAbstraction_:
     def test_immutable(self):
         abs = Abstraction(Variable('a', 'obj'), 'b')
@@ -78,6 +87,10 @@ class TestAbstraction_:
 
         assert_not_equal(Abstraction(Variable('a', 'obj'), 'b'),
                          Abstraction(Variable('a', 'obj'), 'c'))
+
+    def test_set_membership(self):
+        assert_true(Abstraction(Variable('a', 'obj'), 'b')
+                    in set([Abstraction(Variable('a', 'obj'), 'b')]))
 
 
 def setup_module(module):
@@ -350,9 +363,3 @@ def test_substitute():
 
     assert result == term
 
-def test_variable_set():
-    xa = Variable('x', qtype.qobj())
-    xb = Variable('x', qtype.qobj())
-
-    assert hash(xa) == hash(xb)
-    assert xa in set([xb])

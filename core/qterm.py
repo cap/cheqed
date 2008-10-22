@@ -210,6 +210,9 @@ class Constant(object):
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
+
 class Variable(object):
     def __init__(self, name, qtype_):
         self._name = name
@@ -265,6 +268,9 @@ class Combination(object):
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.operator) ^ hash(self.operand)
+    
 class Abstraction(object):
     def __init__(self, bound, body):
         if not is_variable(bound):
@@ -295,6 +301,9 @@ class Abstraction(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.bound) ^ hash(self.body)
 
 def unary_op(op, a):
     return build_combination(op, a)
