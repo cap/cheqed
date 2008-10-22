@@ -75,7 +75,7 @@ class Printer(object):
     
     def print_function(self, combination):
         def uncurry(term):
-            if not term.is_combination:
+            if not qterm.is_combination(term):
                 return term, []
             operator, operands = uncurry(term.operator)
             return operator, operands + [term.operand]

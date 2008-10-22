@@ -51,7 +51,7 @@ def right_disjunction(goal):
 @applicable(lambda goal: match(goal.left[0], 'for_all x . phi'))
 def left_universal(goal, witness):
     match_ = match(goal.left[0], 'for_all x . phi')
-    return [sequent([match_['phi'].substitute(witness, match_['x'])]
+    return [sequent([substitute(match_['phi'], witness, match_['x'])]
                     + goal.left,
                     goal.right)]
 
@@ -61,13 +61,13 @@ def left_universal(goal, witness):
 def right_universal(goal, witness):
     match_ = match(goal.right[0], 'for_all x . phi')
 
-    if (not witness.is_variable
+    if (not is_variable(witness)
         or witness.name in [var.name for var in goal.free_variables()]):
         raise unification.UnificationError('Cannot use %s as a witness in %s.'
                                            % (witness, goal.right[0]))
 
     return [sequent(goal.left,
-                    [match_['phi'].substitute(witness, match_['x'])]
+                    [substitute(match_['phi'], witness, match_['x'])]
                     + goal.right[1:])]
 
 @primitive
@@ -75,14 +75,14 @@ def right_universal(goal, witness):
 @applicable(lambda goal: match(goal.left[0], 'schema phi . psi'))
 def left_schema(goal, witness):
     match_ = match(goal.left[0], 'schema phi . psi')
-    return [sequent([match_['psi'].substitute(witness, match_['phi'], respect_bound=True)]
+    return [sequent([substitute(match_['psi'], witness, match_['phi'], respect_bound=True)]
                     + goal.left,
                     goal.right)]
 
 @primitive
 def left_substitution(goal):
     match_ = match(goal.left[1], 'a = b')
-    return [sequent(([goal.left[0].substitute(match_['b'], match_['a'])]
+    return [sequent(([substitute(goal.left[0], match_['b'], match_['a'])]
                      + goal.left[1:]),
                     goal.right)]
 
@@ -90,7 +90,7 @@ def left_substitution(goal):
 def right_substitution(goal):
     match_ = match(goal.left[0], 'a = b')
     return [sequent(goal.left,
-                    ([goal.right[0].substitute(match_['b'], match_['a'])]
+                    ([substitute(goal.right[0], match_['b'], match_['a'])]
                      + goal.right[1:]))]
 
 @primitive

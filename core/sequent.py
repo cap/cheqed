@@ -39,6 +39,6 @@ class Sequent:
 
     def free_variables(self):
         return reduce(lambda x, y: x.union(y),
-                      map(lambda f: f.free_variables,
+                      map(lambda f: qterm.free_variables(f),
                           self.left + self.right))
 

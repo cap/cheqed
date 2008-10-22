@@ -77,6 +77,14 @@ class Environment:
             'match': self.match,
 
             'sequent': sequent.Sequent,
+
+            'substitute': qterm.substitute,
+            'free_variables': qterm.free_variables,
+
+            'is_constant': qterm.is_constant,
+            'is_variable': qterm.is_variable,
+            'is_combination': qterm.is_combination,
+            'is_abstraction': qterm.is_abstraction,
             
             'primitive': self.add_primitive,
             'compound': self.add_compound,
