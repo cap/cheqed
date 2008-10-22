@@ -69,7 +69,7 @@ class Printer(object):
 
     def print_separation(self, term):
         bound, predicate = match_separation(term)
-        pretty_predicate = qterm.unary_op(predicate, bound).beta_reduce()
+        pretty_predicate = beta_reduce(qterm.unary_op(predicate, bound))
         return '{ %s | %s }' % (self.print_atom(bound),
                                 self.print_combination(pretty_predicate))
     

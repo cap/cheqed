@@ -83,8 +83,8 @@ def replace(term, a, b):
         else:
             return term
     elif is_combination(term):
-        return Combination(replace(term.operator, a, b),
-                           replace(term.operand, a, b)).beta_reduce()
+        return beta_reduce(Combination(replace(term.operator, a, b),
+                                       replace(term.operand, a, b)))
     elif is_abstraction(term):
         return Abstraction(replace(term.bound, a, b),
                            replace(term.body, a, b))
@@ -99,8 +99,8 @@ def substitute(term, a, b):
         else:
             return term
     elif is_combination(term):
-        return Combination(substitute(term.operator, a, b),
-                           substitute(term.operand, a, b)).beta_reduce()
+        return beta_reduce(Combination(substitute(term.operator, a, b),
+                                       substitute(term.operand, a, b)))
     elif is_abstraction(term):
         if term.bound in free_variables(b):
             return term
@@ -176,10 +176,28 @@ def unify_types(terms):
     unifier.add_terms(terms)
     return [unifier.unify(term) for term in terms]
 
+def beta_reduce(term):
+    if not is_combination(term):
+        return term
+    
+    if is_abstraction(term.operator):
+        return substitute(term.operator.body,
+                          term.operand,
+                          term.operator.bound)
+    return term
+
 class Constant(object):
     def __init__(self, name, qtype_):
-        self.name = name
-        self.qtype = qtype_
+        self._name = name
+        self._qtype = qtype_
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def qtype(self):
+        return self._qtype
 
     def __repr__(self):
         return 'Constant(%r, %r)' % (self.name, self.qtype)
@@ -191,12 +209,20 @@ class Constant(object):
 
     def __ne__(self, other):
         return not self == other
-    
+
 class Variable(object):
     def __init__(self, name, qtype_):
-        self.name = name
-        self.qtype = qtype_
+        self._name = name
+        self._qtype = qtype_
 
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def qtype(self):
+        return self._qtype
+        
     def __repr__(self):
         return 'Variable(%r, %r)' % (self.name, self.qtype)
     
@@ -212,51 +238,18 @@ class Variable(object):
         return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
 
 class Combination(object):
-    def beta_reduce(self):
-        if is_abstraction(self.operator):
-            return substitute(self.operator.body,
-                              self.operand,
-                              self.operator.bound)
-        return self
-
-    @staticmethod
-    def infer_types(operator, operand):
-        if operator.qtype.is_variable:
-            operator = substitute_type(operator,
-                                       qtype.qfun(qtype.qvar(), qtype.qvar()),
-                                       operator.qtype)
-
-        if operator.qtype.name != 'fun':
-            raise qtype.UnificationError('Operators must be functions.')
-
-        unifier = qtype.TypeUnifier()
-        unifier.add_types([operator.qtype.args[0], operand.qtype])
-        for key, value in unifier.get_substitutions().iteritems():
-            operator = substitute_type(operator, value, key)
-            operand = substitute_type(operand, value, key)
-
-        operator, operand = unify_types([operator, operand])
-        
-        if operator.qtype.args[0] != operand.qtype:
-            message = ('Combination operand type must match'
-                       ' operator argument type. Operand %r does not match'
-                       ' operator %r.' % (operand, operator))
-            raise qtype.UnificationError(message)
-
-        return operator, operand
-        
     def __init__(self, operator, operand):
-        operator, operand = self.infer_types(operator, operand)
+        self._operator = operator
+        self._operand = operand
 
-        if operator.qtype.name != 'fun':
-            raise TypeError('operator must be a function')
-        if operator.qtype.args[0] != operand.qtype:
-            raise TypeError('operand type must match operator argument type')
+    @property
+    def operator(self):
+        return self._operator
+
+    @property
+    def operand(self):
+        return self._operand
         
-        self.operator = operator
-        self.operand = operand
-
-
     @property
     def qtype(self):
         return self.operator.qtype.args[1]
@@ -273,17 +266,21 @@ class Combination(object):
         return not self == other
 
 class Abstraction(object):
-    @staticmethod
-    def infer_types(bound, body):
-        return unify_types([bound, body])
-
     def __init__(self, bound, body):
         if not is_variable(bound):
             raise TypeError('bound terms must be variables')
 
-        self.bound = bound
-        self.body = body
+        self._bound = bound
+        self._body = body
 
+    @property
+    def bound(self):
+        return self._bound
+
+    @property
+    def body(self):
+        return self._body
+        
     @property
     def qtype(self):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
@@ -300,10 +297,45 @@ class Abstraction(object):
         return not self == other
 
 def unary_op(op, a):
-    return Combination(op, a)
+    return build_combination(op, a)
 
 def binary_op(op, a, b):
-    return Combination(Combination(op, a), b)
+    return build_combination(build_combination(op, a), b)
 
 def binder(op, x, a):
-    return unary_op(op, Abstraction(x, a))
+    return unary_op(op, build_abstraction(x, a))
+
+def build_variable(name, qtype_):
+    return Variable(name, qtype_)
+
+def build_constant(name, qtype_):
+    return Constant(name, qtype_)
+
+def build_combination(operator, operand):
+    if operator.qtype.is_variable:
+        operator = substitute_type(operator,
+                                   qtype.qfun(operand.qtype, qtype.qvar()),
+                                   operator.qtype)
+
+    if operator.qtype.name != 'fun':
+        raise TypeError('operators must be functions')
+
+    unifier = qtype.TypeUnifier()
+    unifier.add_types([operator.qtype.args[0], operand.qtype])
+    for key, value in unifier.get_substitutions().iteritems():
+        operator = substitute_type(operator, value, key)
+        operand = substitute_type(operand, value, key)
+
+    operator, operand = unify_types([operator, operand])
+
+    if operator.qtype.args[0] != operand.qtype:
+        raise TypeError('operand type must match operator argument type')
+
+    return Combination(operator, operand)
+
+def build_abstraction(bound, body):
+    bound, body = unify_types([bound, body])
+
+
+    
+    return Abstraction(bound, body)

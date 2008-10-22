@@ -1,3 +1,5 @@
+from nose.tools import assert_equal
+
 from cheqed.core import parser, qtype, qterm
 
 from cheqed.core.qterm import Constant
@@ -89,8 +91,8 @@ class TestParse:
         x = qterm.Variable('x', qobj())
         y = qterm.Variable('y', qobj())
 
-        assert (self.parser.parse('f:obj->obj(x)')
-                == qterm.unary_op(f, x))
+        assert_equal(self.parser.parse('f:obj->obj(x)'),
+                     qterm.unary_op(f, x))
         
         assert (self.parser.parse('f:obj->obj(g:obj->obj(x))')
                 == qterm.unary_op(f, qterm.unary_op(g, x)))

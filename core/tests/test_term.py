@@ -1,8 +1,84 @@
+from nose.tools import assert_true, assert_equal, assert_not_equal, assert_raises
 from py.test import raises
 
 from cheqed.core import environment, qterm, qtype, unification
 from cheqed.core.qtype import qbool, qobj, qfun, qvar
 from cheqed.core.qterm import Variable, Constant, Abstraction, Combination, free_variables
+
+
+class TestConstant_:
+    def test_immutable(self):
+        const = Constant('a', 'obj')
+        assert_raises(AttributeError, setattr, const, 'name', None)
+        assert_raises(AttributeError, setattr, const, 'qtype', None)
+
+    def test_equality(self):
+        assert_equal(Constant('a', 'obj'),
+                     Constant('a', 'obj'))
+
+        assert_not_equal(Constant('a', 'obj'),
+                         Constant('b', 'obj'))
+
+        assert_not_equal(Constant('a', 'obj'),
+                         Constant('a', 'bool'))
+
+        assert_not_equal(Constant('a', 'obj'),
+                         Variable('a', 'obj'))
+
+        
+class TestVariable_:
+    def test_immutable(self):
+        var = Variable('a', 'obj')
+        assert_raises(AttributeError, setattr, var, 'name', None)
+        assert_raises(AttributeError, setattr, var, 'qtype', None)
+
+    def test_equality(self):
+        assert_equal(Variable('a', 'obj'),
+                     Variable('a', 'obj'))
+
+        assert_not_equal(Variable('a', 'obj'),
+                         Variable('b', 'obj'))
+
+        assert_not_equal(Variable('a', 'obj'),
+                         Variable('a', 'bool'))
+
+        assert_not_equal(Variable('a', 'obj'),
+                         Constant('a', 'obj'))
+
+
+class TestCombination_:
+    def test_immutable(self):
+        comb = Combination('a', 'b')
+        assert_raises(AttributeError, setattr, comb, 'operator', None)
+        assert_raises(AttributeError, setattr, comb, 'operand', None)
+    
+    def test_equality(self):
+        assert_equal(Combination('a', 'b'),
+                     Combination('a', 'b'))
+
+        assert_not_equal(Combination('a', 'b'),
+                         Combination('c', 'b'))
+
+        assert_not_equal(Combination('a', 'b'),
+                         Combination('a', 'c'))
+
+
+class TestAbstraction_:
+    def test_immutable(self):
+        abs = Abstraction(Variable('a', 'obj'), 'b')
+        assert_raises(AttributeError, setattr, abs, 'body', None)
+        assert_raises(AttributeError, setattr, abs, 'bound', None)
+    
+    def test_equality(self):
+        assert_equal(Abstraction(Variable('a', 'obj'), 'b'),
+                     Abstraction(Variable('a', 'obj'), 'b'))
+
+        assert_not_equal(Abstraction(Variable('a', 'obj'), 'b'),
+                         Abstraction(Variable('c', 'obj'), 'b'))
+
+        assert_not_equal(Abstraction(Variable('a', 'obj'), 'b'),
+                         Abstraction(Variable('a', 'obj'), 'c'))
+
 
 def setup_module(module):
     env = environment.load_modules('logic', 'set')
@@ -171,9 +247,9 @@ class TestUnification:
         x_var = qterm.Variable('x', pq('?a'))
         phi_var = qterm.Constant('phi', pq('?b->bool'))
         phi_obj = qterm.Constant('phi', pq('obj->bool'))
-        combo_var = qterm.Combination(phi_var, x_var)
-        combo_obj = qterm.Combination(phi_obj, x_obj)
-        combo_var2 = qterm.Combination(phi_var, x_obj)
+        combo_var = qterm.build_combination(phi_var, x_var)
+        combo_obj = qterm.build_combination(phi_obj, x_obj)
+        combo_var2 = qterm.build_combination(phi_var, x_obj)
 
         x, combo = qterm.unify_types([x_obj, combo_var])
         assert x == x_obj
@@ -192,8 +268,8 @@ class TestUnification:
         assert combo_b == combo_obj
 
         f = qterm.Variable('f', pq('?x->?y'))
-        raises(qtype.UnificationError, qterm.Combination, f, f)
-        raises(qtype.UnificationError, qterm.Combination, x_var, x_var)
+        raises(qtype.UnificationError, qterm.build_combination, f, f)
+        raises(qtype.UnificationError, qterm.build_combination, x_var, x_var)
         
         
     def test_abstraction(self):
@@ -225,10 +301,10 @@ def test_combination_qtype():
     x_bool = qterm.Constant('x', qbool)
     f_bool_bool = qterm.Constant('f', qtype.qfun(qbool, qbool))
     
-    raises(qtype.UnificationError, qterm.Combination, x_obj, x_obj)
-    raises(qtype.UnificationError, qterm.Combination, f_bool_bool, x_obj)
+    raises(TypeError, qterm.build_combination, x_obj, x_obj)
+    raises(unification.UnificationError, qterm.build_combination, f_bool_bool, x_obj)
 
-    assert qterm.Combination(f_bool_bool, x_bool).qtype == qbool
+    assert qterm.build_combination(f_bool_bool, x_bool).qtype == qbool
 
 def test_abstraction_qtype():
     qobj = qtype.qobj()
@@ -259,7 +335,7 @@ def test_ops():
     qor = qterm.Constant('or', binop)
     qx = qterm.Variable('x', qobj)
 
-    rx = qterm.Combination(qrel, qx)
+    rx = qterm.build_combination(qrel, qx)
 
     assert free_variables(rx) == set([qx])
 

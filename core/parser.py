@@ -12,7 +12,6 @@ class SyntaxError(Exception):
 class PrecedenceError(Exception):
     pass
 
-
 class Parser:
     def _make_doc(self, nonterminal, pattern, words):
         if len(words) > 0:
@@ -47,7 +46,7 @@ class Parser:
     def _make_binder(self):
         def p_binder(p):
             p[0] = qterm.unary_op(self.syntax[p[1]].constant,
-                                  qterm.Abstraction(p[2], p[3]))
+                                  qterm.build_abstraction(p[2], p[3]))
 
         doc = self._make_doc('binder', '%s atom term',
                              self.syntax.binders())
@@ -188,11 +187,11 @@ class Parser:
 
     def p_atom(self, p):
         'atom : IDENT'
-        p[0] = qterm.Variable(p[1], qtype.qvar())
+        p[0] = qterm.build_variable(p[1], qtype.qvar())
 
     def p_typed_atom(self, p):
         'atom : IDENT COLON type'
-        p[0] = qterm.Variable(p[1], p[3])
+        p[0] = qterm.build_variable(p[1], p[3])
 
     def p_atomic_type_type(self, p):
         'type : atomic_type'
@@ -214,7 +213,7 @@ class Parser:
         
     def p_abstraction(self, p):
         'abstraction : BSLASH atom term'
-        p[0] = qterm.Abstraction(p[2], p[3])
+        p[0] = qterm.build_abstraction(p[2], p[3])
 
     def p_arglist_empty(self, p):
         'arglist :'
@@ -234,7 +233,7 @@ class Parser:
         a = p[3]
         a.reverse()
         while a:
-            c = qterm.Combination(c, a.pop())
+            c = qterm.build_combination(c, a.pop())
         p[0] = c
 
     def p_error(self, p):
