@@ -134,64 +134,6 @@ def substitute_type(term, a, b):
         return Abstraction(substitute_type(term.bound, a, b),
                            substitute_type(term.body, a, b))
 
-class TermUnifier:
-    def __init__(self):
-        self.unifier = Unifier(is_variable, lambda x, y: x in atoms(y))
-
-    def fail(self, term, other):
-        raise UnificationError('Cannot unify %s with %s.' % (term, other))
-        
-    def add_atom_subs(self, atom, other):
-        if is_atom(other):
-            if atom.name == other.name or atom.name == '=':
-                return
-
-        if is_variable(atom):
-            try:
-                qtype.unify([atom.qtype, other.qtype])
-            except UnificationError, ue:
-                self.fail(atom, other)
-
-    #        atom.qtype.unify(other.qtype)
-            self.unifier.add_subs(atom, other)
-            return
-
-        self.fail(atom, other)
-
-    def add_term_subs(self, term, other):
-        if is_constant(term) or is_variable(term):
-            self.add_atom_subs(term, other)
-        elif is_constant(other) or is_variable(other):
-            self.add_atom_subs(other, term)
-        elif is_combination(term) and is_combination(other):
-            self.add_term_subs(term.operator, other.operator)
-            self.add_term_subs(term.operand, other.operand)
-        elif is_abstraction(term) and is_abstraction(other):
-            self.add_term_subs(term.bound, other.bound)
-            self.add_term_subs(term.body, other.body)
-        else:
-            self.fail(term, other)
-
-    def get_substitutions(self):
-        return self.unifier.get_substitutions()
-
-    def unify(self, term, other):
-        for key, value in self.get_substitutions().iteritems():
-            term = replace(term, value, key)
-            other = replace(other, value, key)
-
-        term, other = unify_types([term, other])
-
-        if term != other:
-            self.fail(term, other)
-
-        return term
-
-def unify(term, other):
-    unifier = TermUnifier()
-    unifier.add_term_subs(term, other)
-    return unifier.unify(term, other)
-
 from cheqed.core.unification import UnificationError
 
 def types_unify(types):
