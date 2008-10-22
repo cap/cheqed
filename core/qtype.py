@@ -1,56 +1,62 @@
 from cheqed.core.unification import Unifier, UnificationError
 
-class QTypeError(Exception):
-    def __init__(self, message=''):
-        Exception.__init__(self, message)
+class TypeUnifier:
+    def __init__(self):
+        self.unifier = Unifier(lambda x: x.is_variable,
+                               lambda x, y: x in y.atoms)
 
-def make_unifier(types, unifier=None):
-    if unifier is None:
-        unifier = Unifier()
+    def add_types(self, types):
+        variables = [qtype for qtype in types if qtype.is_variable]
+        compounds = [qtype for qtype in types if not qtype.is_variable]
+        self.add_variables(variables, compounds)
+        self.add_compounds(compounds)
 
-    type_vars = [qtype for qtype in types if qtype.is_variable]
-    type_comps = [qtype for qtype in types if not qtype.is_variable]
+    def add_variables(self, variables, compounds):
+        if len(variables) > 0:
+            if len(compounds) > 0:
+                representative = compounds[0]
+            else:
+                representative = variables[0]
 
-    # pick a representative with which to unify all variables
-    if len(type_vars) > 0:
-        rep = None
-        if len(type_comps) > 0:
-            rep = type_comps[0]
-        else:
-            rep = type_vars[0]
+            for variable in variables:
+                if variable != representative:
+                    self.unifier.add_subs(variable, representative)
 
-        for var in type_vars:
-            if var != rep:
-                unifier.add_subs(var, rep)
+    def add_compounds(self, compounds):
+        if len(compounds) > 0:
+            names = [comp.name for comp in compounds]
+            for name in names:
+                if name != names[0]:
+                    raise UnificationError('Cannot unify %s with %s'
+                                           % (name, names[0]))
 
-    # unify types (which may themselves contain type variables)
-    if len(type_comps) > 0:
-        names = [comp.name for comp in type_comps]
-        for name in names:
-            if name != names[0]:
-                raise UnificationError('Cannot unify %s with %s'
-                                       % (name, names[0]))
+            args = [comp.args for comp in compounds]
+            for arg in args:
+                if len(arg) != len(args[0]):
+                    raise UnificationError('unfiymanytypes:len')
 
-        args = [comp.args for comp in type_comps]
-        for arg in args:
-            if len(arg) != len(args[0]):
-                raise UnificationError('unfiymanytypes:len')
+            for equiv in zip(*args):
+                self.add_types(equiv)
 
-        for equiv in zip(*args):
-            unifier = make_unifier(equiv, unifier)
+    def get_substitutions(self):
+        return self.unifier.get_substitutions()
 
-    return unifier
+    def unify(self, qtype):
+        for key, value in self.get_substitutions().iteritems():
+            qtype = qtype.substitute(value, key)
+        return qtype
 
 def unify(types):
     if len(types) == 0:
         return None
     
-    unifier = make_unifier(types)
-    rep = types[0]
-    for key, value in unifier.unified_subs().iteritems():
-        rep = rep.substitute(value, key)
+    unifier = TypeUnifier()
+    unifier.add_types(types)
+    return unifier.unify(types[0])
 
-    return rep
+class QTypeError(Exception):
+    def __init__(self, message=''):
+        Exception.__init__(self, message)
 
 class QTypeVariable(object):
     _index = 0

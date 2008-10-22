@@ -5,8 +5,14 @@ from cheqed.core import unification
 def is_variable(x):
     return isinstance(x, str)
 
+def occurs_in(x, y):
+    return x in str(y)
+
 def unify(subs):
-    return unification.unify(subs, is_variable, lambda a, b: a in str(b))
+    unifier = unification.Unifier(is_variable, occurs_in)
+    for a, b in subs:
+        unifier.add_subs(a, b)
+    return unifier.get_substitutions()
 
 def test_unify():
     expected = [

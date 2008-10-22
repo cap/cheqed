@@ -14,32 +14,32 @@ def test_str():
     assert (str(qtype.qfun(qtype.qfun(qobj, qobj), qbool))
             == '((obj->obj)->bool)')
 
-def test_make_unifier():
-    var = qvar()
-    obj = qobj()
-    uni = qtype.make_unifier([var, obj])
-    assert uni.apply(var) == obj
+# def test_make_unifier():
+#     var = qvar()
+#     obj = qobj()
+#     uni = qtype.make_unifier([var, obj])
+#     assert uni.apply(var) == obj
 
-    fun0 = qfun(qobj(), qbool())
-    fun1 = qfun(qvar(), qbool())
-    uni = qtype.make_unifier([fun0, fun1])
-    assert uni.apply(fun1) == fun0
+#     fun0 = qfun(qobj(), qbool())
+#     fun1 = qfun(qvar(), qbool())
+#     uni = qtype.make_unifier([fun0, fun1])
+#     assert uni.apply(fun1) == fun0
 
-    fun0 = qfun(qobj(), qbool())
-    fun1 = qfun(qvar(), qbool())
-    uni = qtype.make_unifier([fun0, fun1])
-    assert uni.apply(fun1) == fun0
+#     fun0 = qfun(qobj(), qbool())
+#     fun1 = qfun(qvar(), qbool())
+#     uni = qtype.make_unifier([fun0, fun1])
+#     assert uni.apply(fun1) == fun0
 
-    fun2 = qfun(var, var)
-    uni = qtype.make_unifier([fun0, fun2])
-    raises(qtype.UnificationError, uni.apply, fun2)
+#     fun2 = qfun(var, var)
+#     uni = qtype.make_unifier([fun0, fun2])
+#     raises(qtype.UnificationError, uni.apply, fun2)
 
-    raises(qtype.UnificationError, qtype.make_unifier, [fun0, obj])
+#     raises(qtype.UnificationError, qtype.make_unifier, [fun0, obj])
 
-    fun0 = qfun(qobj(), qvar())
-    fun1 = qfun(qvar(), qbool())
-    uni = qtype.make_unifier([fun0, fun1])
-    assert uni.apply(fun0) == uni.apply(fun1)
+#     fun0 = qfun(qobj(), qvar())
+#     fun1 = qfun(qvar(), qbool())
+#     uni = qtype.make_unifier([fun0, fun1])
+#     assert uni.apply(fun0) == uni.apply(fun1)
     
 def test_unify():
     raises(qtype.UnificationError, qobj().unify, qbool())

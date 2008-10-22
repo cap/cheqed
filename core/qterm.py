@@ -91,63 +91,64 @@ def substitute_type(term, a, b):
     elif is_abstraction(term):
         return Abstraction(substitute_type(term.bound, a, b),
                            substitute_type(term.body, a, b))
-    
-def make_atom_unifier(atom, other, unifier=None):
-    if unifier is None:
-        unifier = Unifier()
 
-    if hasattr(other, 'name'):
-        if (atom.name == other.name
-            or atom.name == '='):
-            return unifier
+class TermUnifier:
+    def __init__(self):
+        self.unifier = Unifier(is_variable, lambda x, y: x in atoms(y))
 
-    if is_variable(atom):
-        try:
-            qtype.unify([atom.qtype, other.qtype])
-        except UnificationError, ue:
-            raise UnificationError('Cannot unify %s with %s.' % (atom, other))
-#        atom.qtype.unify(other.qtype)
-        unifier.add_subs(atom, other)
-        return unifier
-
-    raise UnificationError('Cannot unify %s with %s' % (atom, other))
-
-def make_unifier(term, other, unifier=None):
-    if unifier is None:
-        unifier = Unifier()
-
-    if is_constant(term) or is_variable(term):
-        return make_atom_unifier(term, other, unifier)
+    def fail(self, term, other):
+        raise UnificationError('Cannot unify %s with %s.' % (term, other))
         
-    if is_constant(other) or is_variable(other):
-        return make_atom_unifier(other, term, unifier)
-    
-    if is_combination(term) and is_combination(other):
-        unifier = make_unifier(term.operator, other.operator, unifier)
-        unifier = make_unifier(term.operand, other.operand, unifier)
-        return unifier
+    def add_atom_subs(self, atom, other):
+        if is_atom(other):
+            if atom.name == other.name or atom.name == '=':
+                return
 
-    if is_abstraction(term) and is_abstraction(other):
-        unifier = make_unifier(term.bound, other.bound, unifier)
-        unifier = make_unifier(term.body, other.body, unifier)
-        return unifier
+        if is_variable(atom):
+            try:
+                qtype.unify([atom.qtype, other.qtype])
+            except UnificationError, ue:
+                self.fail(atom, other)
 
-    raise UnificationError('Cannot unify %s with %s'
-                                       % (term, other))
+    #        atom.qtype.unify(other.qtype)
+            self.unifier.add_subs(atom, other)
+            return
+
+        self.fail(atom, other)
+
+    def add_term_subs(self, term, other):
+        if is_constant(term) or is_variable(term):
+            self.add_atom_subs(term, other)
+        elif is_constant(other) or is_variable(other):
+            self.add_atom_subs(other, term)
+        elif is_combination(term) and is_combination(other):
+            self.add_term_subs(term.operator, other.operator)
+            self.add_term_subs(term.operand, other.operand)
+        elif is_abstraction(term) and is_abstraction(other):
+            self.add_term_subs(term.bound, other.bound)
+            self.add_term_subs(term.body, other.body)
+        else:
+            self.fail(term, other)
+
+    def get_substitutions(self):
+        return self.unifier.get_substitutions()
+
+    def unify(self, term, other):
+        for key, value in self.get_substitutions().iteritems():
+            term = replace(term, value, key)
+            other = replace(other, value, key)
+
+        term, other = unify_types([term, other])
+
+        if term != other:
+            self.fail(term, other)
+
+        return term
 
 def unify(term, other):
-    unifier = make_unifier(term, other)
-    for key, value in unifier.unified_subs(is_variable, atoms).iteritems():
-        term = replace(term, value, key)
-        other = replace(other, value, key)
-
-    term, other = unify_types([term, other])
-
-    if term != other:
-        raise UnificationError('Cannot unify %s with %s'
-                                           % (term, other))
-
-    return term
+    unifier = TermUnifier()
+    unifier.add_term_subs(term, other)
+    return unifier.unify(term, other)
 
 from cheqed.core.unification import UnificationError
 
@@ -158,35 +159,40 @@ def types_unify(types):
     except UnificationError:
         return False
 
-def make_type_unifier(terms, unifier=None):
-    if unifier is None:
-        unifier = unification.Unifier()
-        
-    atoms_by_name = {}
-    for term in terms:
-        for atom in free_variables(term):
-            if atom.name != '=':
-                atoms_by_name.setdefault(atom.name, []).append(atom)
+class TermTypeUnifier:
+    def __init__(self):
+        self.unifier = qtype.TypeUnifier()
 
-    unifier = qtype.Unifier()
-    for name, atoms in atoms_by_name.iteritems():
-        if len(atoms) > 1:
-            try:
-                unifier = qtype.make_unifier([atom.qtype for atom in atoms],
-                                             unifier)
-            except unification.UnificationError:
-                raise unification.UnificationError('Cannot unify types for atoms %s.' % ' and '.join([str(atom) for atom in atoms]))
+    def add_terms(self, terms):
+        atoms_by_name = {}
+        for term in terms:
+            for atom in free_variables(term):
+                if atom.name != '=':
+                    atoms_by_name.setdefault(atom.name, []).append(atom)
 
-    return unifier
-    
+        for name, atoms in atoms_by_name.iteritems():
+            if len(atoms) > 1:
+                try:
+                    self.unifier.add_types([atom.qtype for atom in atoms])
+                except unification.UnificationError:
+                    msg = 'Cannot unify types for atoms %s.' \
+                        % ' and '.join([str(atom) for atom in atoms])
+                    raise unification.UnificationError(msg)
+
+    def unify(self, term):
+        for key, value in self.get_substitutions().iteritems():
+            term = substitute_type(term, value, key)
+        return term
+
+    def get_substitutions(self):
+        return self.unifier.get_substitutions()
+
 def unify_types(terms):
-    unifier = make_type_unifier(terms)
-
-    for key, value in unifier.unified_subs().iteritems():
-        for i in range(len(terms)):
-            terms[i] = substitute_type(terms[i], value, key)
-
-    return terms
+    unifier = TermTypeUnifier()
+    unifier.add_terms(terms)
+    return [unifier.unify(term) for term in terms]
+    
+    
 
 class Constant(object):
     def __init__(self, name, qtype_):
@@ -240,9 +246,10 @@ class Combination(object):
 
         if operator.qtype.name != 'fun':
             raise qtype.UnificationError('Operators must be functions.')
-        
-        unifier = qtype.make_unifier([operator.qtype.args[0], operand.qtype])
-        for key, value in unifier.unified_subs().iteritems():
+
+        unifier = qtype.TypeUnifier()
+        unifier.add_types([operator.qtype.args[0], operand.qtype])
+        for key, value in unifier.get_substitutions().iteritems():
             operator = substitute_type(operator, value, key)
             operand = substitute_type(operand, value, key)
 
