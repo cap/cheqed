@@ -344,7 +344,7 @@ def test_abstraction_qtype():
 
     y_const_bool = qterm.Constant('y', qbool)
     
-    raises(qtype.UnificationError, qterm.Abstraction, x_const_obj, y_const_bool)
+    raises(TypeError, qterm.Abstraction, x_const_obj, y_const_bool)
     assert (qterm.Abstraction(x_var_obj, y_const_bool).qtype
             == qtype.qfun(qobj, qbool))
 

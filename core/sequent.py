@@ -12,14 +12,6 @@ class Sequent:
         else:
             raise KeyError
 
-    def __setitem__(self, key, value):
-        if key == 'left':
-            self.left = value
-        elif key == 'right':
-            self.right = value
-        else:
-            raise KeyError
-
     @staticmethod
     def infer_types(left, right):
         all = left + right
@@ -33,12 +25,11 @@ class Sequent:
         return 'Sequent(%r, %r)' % (self.left, self.right)
 
     def __eq__(self, other):
-        return isinstance(other, Sequent) \
-               and self.left == other.left \
-               and self.right == other.right
+        return (self.__class__ == other.__class__
+                and self.left == other.left
+                and self.right == other.right)
 
     def free_variables(self):
         return reduce(lambda x, y: x.union(y),
                       map(lambda f: qterm.free_variables(f),
                           self.left + self.right))
-

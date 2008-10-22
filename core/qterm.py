@@ -1,3 +1,33 @@
+'''Represent terms from the typed lambda calculus.
+
+I've gone back and forth about how to structure the
+representation. Should terms be large objects, with methods to query
+for free variables and perform substutions? Or should they be very
+small value types, with free methods acting upon them?
+
+Large Objects
+-------------
+
+Can be consistent with other types of objects: foo.free_variables()
+can work whether foo is a term or a sequent.
+
+Much of the type dispatching we need in small objects is taken care of
+by the object system.
+
+Small Objects
+-------------
+
+Better code organization: we more often want to think in terms of
+methods rather than objects.
+
+
+
+Furthermore, what do we do about correctness? It seems a bit heavy to
+do typechecking and inference at construction time. Maybe we just do a
+check, then move inference elsewhere when it is needed?
+
+'''
+
 from cheqed.core.unification import Unifier, UnificationError
 from cheqed.core import qtype, unification
 
@@ -37,7 +67,16 @@ def atoms(term):
     elif is_abstraction(term):
         return atoms(term.body) | set([term.bound])
 
+def validate_substitution(a, b):
+    return
+    if a.qtype != b.qtype:
+        raise TypeError('cannot substitute term of type %s for term of type %s'
+                        % (a.qtype, b.qtype))
+    
 def replace(term, a, b):
+    '''Substitute a for b in term, not respecting bound variables.'''
+    validate_substitution(a, b)
+
     if is_atom(term):
         if term == b:
             return a
@@ -51,6 +90,9 @@ def replace(term, a, b):
                            replace(term.body, a, b))
 
 def substitute(term, a, b):
+    '''Substitute a for b in term, respecting bound variables.'''
+    validate_substitution(a, b)
+    
     if is_atom(term):
         if term == b:
             return a
@@ -191,8 +233,6 @@ def unify_types(terms):
     unifier = TermTypeUnifier()
     unifier.add_terms(terms)
     return [unifier.unify(term) for term in terms]
-    
-    
 
 class Constant(object):
     def __init__(self, name, qtype_):
@@ -264,7 +304,16 @@ class Combination(object):
         return operator, operand
         
     def __init__(self, operator, operand):
-        self.operator, self.operand = self.infer_types(operator, operand)
+        operator, operand = self.infer_types(operator, operand)
+
+        if operator.qtype.name != 'fun':
+            raise TypeError('operator must be a function')
+        if operator.qtype.args[0] != operand.qtype:
+            raise TypeError('operand type must match operator argument type')
+        
+        self.operator = operator
+        self.operand = operand
+
 
     @property
     def qtype(self):
@@ -285,12 +334,13 @@ class Abstraction(object):
     @staticmethod
     def infer_types(bound, body):
         return unify_types([bound, body])
-    
+
     def __init__(self, bound, body):
-        self.bound, self.body = self.infer_types(bound, body)
-        
-        if not is_variable(self.bound):
-            raise qtype.UnificationError('Bound terms must be variables.')
+        if not is_variable(bound):
+            raise TypeError('bound terms must be variables')
+
+        self.bound = bound
+        self.body = body
 
     @property
     def qtype(self):
