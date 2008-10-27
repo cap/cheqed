@@ -75,7 +75,7 @@ def right_universal(goal, witness):
 @applicable(lambda goal: match(goal.left[0], 'schema phi . psi'))
 def left_schema(goal, witness):
     match_ = match(goal.left[0], 'schema phi . psi')
-    return [sequent([substitute(match_['psi'], witness, match_['phi'], respect_bound=True)]
+    return [sequent([substitute(match_['psi'], witness, match_['phi'])]
                     + goal.left,
                     goal.right)]
 

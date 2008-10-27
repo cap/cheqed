@@ -21,10 +21,22 @@ Better code organization: we more often want to think in terms of
 methods rather than objects.
 
 
-
 Furthermore, what do we do about correctness? It seems a bit heavy to
 do typechecking and inference at construction time. Maybe we just do a
 check, then move inference elsewhere when it is needed?
+
+Although, really, what sort of correctness do we want to guarantee?
+And in what scope? Do we want all variables with the same name to have
+the same type? All variables in the same scope with the same name ... ?
+
+Up to this point, we have, in an ad-hoc way, forced all variables with
+the same name in a particular sequent to have the same
+type. Introducing a new instance of an existing variable with the
+wrong type leads to a unification error. That said, introducing a new
+instance of an existing variable with a variable type causes type
+inference to assign a type to that variable, insofar as its type can
+be inferred.
+
 
 '''
 
@@ -72,22 +84,6 @@ def validate_substitution(a, b):
     if a.qtype != b.qtype:
         raise TypeError('cannot substitute term of type %s for term of type %s'
                         % (a.qtype, b.qtype))
-    
-def replace(term, a, b):
-    '''Substitute a for b in term, not respecting bound variables.'''
-    validate_substitution(a, b)
-
-    if is_atom(term):
-        if term == b:
-            return a
-        else:
-            return term
-    elif is_combination(term):
-        return beta_reduce(Combination(replace(term.operator, a, b),
-                                       replace(term.operand, a, b)))
-    elif is_abstraction(term):
-        return Abstraction(replace(term.bound, a, b),
-                           replace(term.body, a, b))
 
 def substitute(term, a, b):
     '''Substitute a for b in term, respecting bound variables.'''
