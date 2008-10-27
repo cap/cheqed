@@ -56,7 +56,7 @@ def is_abstraction(term):
     return isinstance(term, Abstraction)
 
 def is_atom(term):
-    return is_constant(term) or is_variable(term)
+    return isinstance(term, Atom)
 
 def is_term(term):
     return is_atom(term) or is_combination(term) or is_abstraction(term)
@@ -182,7 +182,8 @@ def beta_reduce(term):
                           term.operator.bound)
     return term
 
-class Constant(object):
+
+class Atom(object):
     def __init__(self, name, qtype_):
         self._name = name
         self._qtype = qtype_
@@ -195,47 +196,28 @@ class Constant(object):
     def qtype(self):
         return self._qtype
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.name == other.name
+                and self.qtype == other.qtype)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
+
+    
+class Constant(Atom):
     def __repr__(self):
         return 'Constant(%r, %r)' % (self.name, self.qtype)
 
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self.name == other.name
-                and self.qtype == other.qtype)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
-
-class Variable(object):
-    def __init__(self, name, qtype_):
-        self._name = name
-        self._qtype = qtype_
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def qtype(self):
-        return self._qtype
-        
+    
+class Variable(Atom):
     def __repr__(self):
         return 'Variable(%r, %r)' % (self.name, self.qtype)
+
     
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self.name == other.name
-                and self.qtype == other.qtype)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
-
 class Combination(object):
     def __init__(self, operator, operand):
         self._operator = operator
