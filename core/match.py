@@ -1,5 +1,5 @@
-from qterm import is_variable, is_constant, is_combination, is_abstraction, \
-    types_unify
+from qterm import is_variable, is_constant, is_combination, is_abstraction
+from qtype_unifier import can_unify 
 
 class TermMatcher:
     def __init__(self):
@@ -18,7 +18,7 @@ class TermMatcher:
             self.fail(pattern, term)
 
     def match_variable(self, pattern, term):
-        if types_unify([pattern.qtype, term.qtype]):
+        if can_unify([pattern.qtype, term.qtype]):
             if pattern.name in self.assignments:
                 if self.assignments[pattern.name] == term:
                     return
@@ -31,7 +31,7 @@ class TermMatcher:
 
     def match_constant(self, pattern, term):
         if pattern.name != term.name \
-                or not types_unify([pattern.qtype, term.qtype]):
+                or not can_unify([pattern.qtype, term.qtype]):
             self.fail(pattern, term)
 
     def match_combination(self, pattern, term):

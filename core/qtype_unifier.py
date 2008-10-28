@@ -32,3 +32,11 @@ def unify(types):
     unifier = TypeUnifier()
     unifier.unify_many(types)
     return unifier.apply(types[0])
+
+def can_unify(types):
+    unifier = TypeUnifier()
+    try:
+        unifier.unify_many(types)
+    except UnificationError:
+        return False
+    return True

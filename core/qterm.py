@@ -40,9 +40,7 @@ be inferred.
 
 '''
 
-from cheqed.core.unification import Unifier, UnificationError
-from cheqed.core import qtype, unification
-from cheqed.core.qtype_unifier import TypeUnifier
+from cheqed.core import qtype
 
 def is_constant(term):
     return isinstance(term, Constant)
@@ -73,15 +71,6 @@ def validate_substitution(a, b):
         raise TypeError('cannot substitute term of type %s for term of type %s'
                         % (a.qtype, b.qtype))
 
-from cheqed.core.unification import UnificationError
-
-def types_unify(types):
-    unifier = TypeUnifier()
-    try:
-        unifier.unify_many(types)
-    except UnificationError:
-        return False
-    return True
 
 def beta_reduce(term):
     if not is_combination(term):
