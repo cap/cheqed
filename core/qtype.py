@@ -104,3 +104,6 @@ def is_constant(qtype):
 
 def is_polymorphic(qtype):
     return isinstance(qtype, Polymorphic)
+
+def is_fun(qtype):
+    return qtype.name == 'fun'

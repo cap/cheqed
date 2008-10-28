@@ -141,6 +141,12 @@ class Variable(Atom):
 
 class Combination(object):
     def __init__(self, operator, operand):
+        if not qtype.is_fun(operator.qtype):
+            raise TypeError('operator qtype must be "fun"')
+
+        if operator.qtype.args[0] != operand.qtype:
+            raise TypeError('operand type must match operator argument type')
+        
         self._operator = operator
         self._operand = operand
 
@@ -151,14 +157,14 @@ class Combination(object):
     @property
     def operand(self):
         return self._operand
-        
+
     @property
     def qtype(self):
         return self.operator.qtype.args[1]
-    
+
     def __repr__(self):
         return 'Combination(%r, %r)' % (self.operator, self.operand)
-    
+
     def __eq__(self, other):
         return (self.__class__ == other.__class__
                 and self.operator == other.operator
