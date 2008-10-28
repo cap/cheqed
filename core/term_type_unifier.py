@@ -1,5 +1,5 @@
 from cheqed.core.qtype_unifier import TypeUnifier
-from cheqed.core.qterm import substitute_type, by_name
+from cheqed.core.qterm import by_name
 
 class TermTypeUnifier:
     '''Unify the types of free variables.
@@ -21,7 +21,7 @@ class TermTypeUnifier:
 
     def apply(self, term):
         for key, value in self.get_substitutions().iteritems():
-            term = substitute_type(term, value, key)
+            term = term.substitute_type(value, key)
         return term
 
     def get_substitutions(self):

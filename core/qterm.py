@@ -105,20 +105,6 @@ def substitute(term, a, b):
             bound = new_bound
         return Abstraction(bound, substitute(body, a, b))
 
-def substitute_type(term, a, b):
-    if is_constant(term):
-        qtype = term.qtype.substitute(a, b)
-        return Constant(term.name, qtype)
-    elif is_variable(term):
-        qtype = term.qtype.substitute(a, b)
-        return Variable(term.name, qtype)
-    elif is_combination(term):
-        return Combination(substitute_type(term.operator, a, b),
-                           substitute_type(term.operand, a, b))    
-    elif is_abstraction(term):
-        return Abstraction(substitute_type(term.bound, a, b),
-                           substitute_type(term.body, a, b))
-
 from cheqed.core.unification import UnificationError
 
 def types_unify(types):
@@ -175,6 +161,9 @@ class Constant(Atom):
     def free_variables(self):
         return set()
 
+    def substitute_type(self, a, b):
+        return Constant(self.name, self.qtype.substitute(a, b))
+
 
 class Variable(Atom):
     def __repr__(self):
@@ -182,6 +171,9 @@ class Variable(Atom):
 
     def free_variables(self):
         return set([self])
+
+    def substitute_type(self, a, b):
+        return Variable(self.name, self.qtype.substitute(a, b))
 
 
 class Combination(object):
@@ -221,6 +213,10 @@ class Combination(object):
     def free_variables(self):
         return self.operator.free_variables() | self.operand.free_variables()
 
+    def substitute_type(self, a, b):
+        return Combination(self.operator.substitute_type(a, b),
+                           self.operand.substitute_type(a, b))    
+    
     
 class Abstraction(object):
     def __init__(self, bound, body):
@@ -262,3 +258,6 @@ class Abstraction(object):
     def free_variables(self):
         return self.body.free_variables() - set([self.bound])
 
+    def substitute_type(self, a, b):
+        return Abstraction(self.bound.substitute_type(a, b),
+                           self.body.substitute_type(a, b))

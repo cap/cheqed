@@ -18,10 +18,9 @@ def build_constant(name, qtype_):
 
 def build_combination(operator, operand):
     if qtype.is_variable(operator.qtype):
-        operator = qterm.substitute_type(operator,
-                                         qtype.qfun(operand.qtype,
-                                                    qtype.qvar()),
-                                         operator.qtype)
+        operator = operator.substitute_type(qtype.qfun(operand.qtype,
+                                                       qtype.qvar()),
+                                            operator.qtype)
 
     if operator.qtype.name != 'fun':
         raise TypeError('operators must be functions')
@@ -29,8 +28,8 @@ def build_combination(operator, operand):
     unifier = qtype_unifier.TypeUnifier()
     unifier.unify(operator.qtype.args[0], operand.qtype)
     for key, value in unifier.get_substitutions().iteritems():
-        operator = qterm.substitute_type(operator, value, key)
-        operand = qterm.substitute_type(operand, value, key)
+        operator = operator.substitute_type(value, key)
+        operand = operand.substitute_type(value, key)
 
     operator, operand = unify_types([operator, operand])
 
