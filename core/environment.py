@@ -4,6 +4,7 @@ from cheqed.core import parser, printer, qterm, qtype, syntax, sequent, unificat
 from cheqed.core import trace
 from cheqed.core.match import match_term
 from cheqed.core.qterm import is_term
+from cheqed.core.term_type_unifier import unify_types
 
 def arg_types(*args):
     def assign_types(rule):
@@ -261,8 +262,8 @@ class Environment:
     
 def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand
-    atom, term = qterm.unify_types([atom, term])
-    return qterm.substitute(term, value, atom)                    
+    atom, term = unify_types([atom, term])
+    return qterm.substitute(term, value, atom)
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
 def load_modules(*modules):

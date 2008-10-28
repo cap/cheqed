@@ -1,4 +1,5 @@
 from cheqed.core import qtype, qtype_unifier, qterm
+from cheqed.core.term_type_unifier import unify_types
 
 def unary_op(op, a):
     return build_combination(op, a)
@@ -31,7 +32,7 @@ def build_combination(operator, operand):
         operator = qterm.substitute_type(operator, value, key)
         operand = qterm.substitute_type(operand, value, key)
 
-    operator, operand = qterm.unify_types([operator, operand])
+    operator, operand = unify_types([operator, operand])
 
     if operator.qtype.args[0] != operand.qtype:
         raise TypeError('operand type must match operator argument type')
@@ -39,5 +40,5 @@ def build_combination(operator, operand):
     return qterm.Combination(operator, operand)
 
 def build_abstraction(bound, body):
-    bound, body = qterm.unify_types([bound, body])
+    bound, body = unify_types([bound, body])
     return qterm.Abstraction(bound, body)

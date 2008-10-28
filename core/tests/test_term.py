@@ -5,7 +5,7 @@ from cheqed.core import environment, qterm, term_builder, qtype, unification
 from cheqed.core.qtype import qbool, qobj, qfun, qvar
 from cheqed.core.qterm import Variable, Constant, Abstraction, Combination, free_variables
 from cheqed.core.unification import UnificationError
-
+from cheqed.core.term_type_unifier import unify_types
 
 class TestConstant_:
     def test_immutable(self):
@@ -150,7 +150,7 @@ class TestVariable:
         f2 = qterm.Variable('f', qfun(qvar(), qvar()))
         assert f1 != f2
 
-        f1u, f2u = qterm.unify_types([f1, f2])
+        f1u, f2u = unify_types([f1, f2])
         assert f1u == f2u
 
         # this is a particularly tricky situation
@@ -160,7 +160,7 @@ class TestVariable:
         g2 = qterm.Variable('g', qfun(v2, qobj()))
         assert g1 != g2
 
-        g1u, g2u = qterm.unify_types([g1, g2])
+        g1u, g2u = unify_types([g1, g2])
         assert g1u == g2u
 
     def test_unify_types2(self):
@@ -168,7 +168,7 @@ class TestVariable:
         x2 = qterm.Variable('x', qvar())
         assert x1 != x2
 
-        x1u, x2u = qterm.unify_types([x1, x2])
+        x1u, x2u = unify_types([x1, x2])
         assert x1u == x2u
 
 class TestCombination:
@@ -243,17 +243,17 @@ class TestUnification:
         x_var2 = qterm.Constant('x', pq('?a'))
         y_bool = qterm.Constant('y', pq('bool'))
 
-        x, y = qterm.unify_types([x_obj, y_bool])
+        x, y = unify_types([x_obj, y_bool])
         assert x == x_obj
         assert y == y_bool
         
-#        raises(qtype.UnificationError, qterm.unify_types, [x_obj, x_bool])
-        xa, xb = qterm.unify_types([x_obj, x_var])
+#        raises(qtype.UnificationError, unify_types, [x_obj, x_bool])
+        xa, xb = unify_types([x_obj, x_var])
         assert xa == x_obj
         assert xb == x_var
 
         assert x_var != x_var2
-        xa, xb = qterm.unify_types([x_var, x_var2])
+        xa, xb = unify_types([x_var, x_var2])
         assert xa == x_var
 
     def test_combo(self):
@@ -265,19 +265,19 @@ class TestUnification:
         combo_obj = term_builder.build_combination(phi_obj, x_obj)
         combo_var2 = term_builder.build_combination(phi_var, x_obj)
 
-        x, combo = qterm.unify_types([x_obj, combo_var])
+        x, combo = unify_types([x_obj, combo_var])
         assert x == x_obj
         assert combo == combo_obj
 
-        phi_a, phi_b = qterm.unify_types([phi_var, phi_obj])
+        phi_a, phi_b = unify_types([phi_var, phi_obj])
         assert phi_a == phi_var
         assert phi_b == phi_obj
 
-        combo_a, combo_b = qterm.unify_types([combo_var, combo_obj])
+        combo_a, combo_b = unify_types([combo_var, combo_obj])
         assert combo_a == combo_obj
         assert combo_b == combo_obj
 
-        combo_a, combo_b = qterm.unify_types([combo_var2, combo_obj])
+        combo_a, combo_b = unify_types([combo_var2, combo_obj])
         assert combo_a == combo_obj
         assert combo_b == combo_obj
 

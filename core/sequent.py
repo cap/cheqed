@@ -1,4 +1,5 @@
 from cheqed.core import qterm
+from cheqed.core.term_type_unifier import unify_types
 
 class Sequent:
     def __init__(self, left=[], right=[]):
@@ -16,7 +17,7 @@ class Sequent:
     def infer_types(left, right):
         all = left + right
         if len(all) > 1:
-            all = qterm.unify_types(all)
+            all = unify_types(all)
             left = all[:len(left)]
             right = all[len(left):]
         return left, right
