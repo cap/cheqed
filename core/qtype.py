@@ -2,46 +2,24 @@ from cheqed.core.unification import Unifier, UnificationError
 
 class TypeUnifier:
     def __init__(self):
-        self.unifier = Unifier(lambda x: x.is_variable,
-                               lambda x, y: x in y.atoms)
+        self.unifier = Unifier(is_variable, lambda x, y: x in y.atoms())
 
-    def add_types(self, types):
-        variables = [qtype for qtype in types if qtype.is_variable]
-        compounds = [qtype for qtype in types if not qtype.is_variable]
-        self.add_variables(variables, compounds)
-        self.add_compounds(compounds)
+    def unify_many(self, types):
+        rep = types[0]
+        for i in range(0, len(types)):
+            self.unify(types[i], rep)
 
-    def add_variables(self, variables, compounds):
-        if len(variables) > 0:
-            if len(compounds) > 0:
-                representative = compounds[0]
-            else:
-                representative = variables[0]
-
-            for variable in variables:
-                if variable != representative:
-                    self.unifier.add_subs(variable, representative)
-
-    def add_compounds(self, compounds):
-        if len(compounds) > 0:
-            names = [comp.name for comp in compounds]
-            for name in names:
-                if name != names[0]:
-                    raise UnificationError('Cannot unify %s with %s'
-                                           % (name, names[0]))
-
-            args = [comp.args for comp in compounds]
-            for arg in args:
-                if len(arg) != len(args[0]):
-                    raise UnificationError('unfiymanytypes:len')
-
-            for equiv in zip(*args):
-                self.add_types(equiv)
+    def unify(self, a, b):
+        if is_polymorphic(a) and is_polymorphic(b) and a.name == b.name:
+            for arg_a, arg_b in zip(a.args, b.args):
+                self.unify(arg_a, arg_b)
+        else:
+            self.unifier.unify(a, b)
 
     def get_substitutions(self):
         return self.unifier.get_substitutions()
 
-    def unify(self, qtype):
+    def apply(self, qtype):
         for key, value in self.get_substitutions().iteritems():
             qtype = qtype.substitute(value, key)
         return qtype
@@ -51,119 +29,61 @@ def unify(types):
         return None
     
     unifier = TypeUnifier()
-    unifier.add_types(types)
-    return unifier.unify(types[0])
+    unifier.unify_many(types)
+    return unifier.apply(types[0])
 
-class QTypeError(Exception):
-    def __init__(self, message=''):
-        Exception.__init__(self, message)
+def is_variable(qtype):
+    return isinstance(qtype, Variable)
 
-class QTypeVariable(object):
-    _index = 0
-    
-    def __init__(self):
-        self._index = QTypeVariable._index
-        QTypeVariable._index += 1
+def is_constant(qtype):
+    return isinstance(qtype, Constant)
 
-    def __contains__(self, other):
-        if self == other:
-            return True
-        else:
-            return False
+def is_polymorphic(qtype):
+    return isinstance(qtype, Polymorphic)
 
-    @property
-    def atoms(self):
-        return set([self])
-        
-    @property
-    def is_variable(self):
-        return True
-        
+class Atom(object):
+    def __init__(self, name):
+        self._name = name
+
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.name == other.name)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.__class__) ^ hash(self.name)
+
     @property
     def name(self):
-        return '?v%d' % self._index
+        return self._name
+    
+    def atoms(self):
+        return set([self])
 
-    @property
-    def args(self):
-        return []
-
+class Variable(Atom):
     def substitute(self, a, b):
         if self == b:
             return a
         else:
             return self
 
-    def unify(self, other):
-        return unify([other, self])
-
-    def __repr__(self):
-        return self.name
-    
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self._index == other._index)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash(self._index)
-            
-class QType(object):
-    _arity = {
-        'obj': 0,
-        'bool': 0,
-        'fun': 2,
-        }
-
-    def __init__(self, name, args):
-        try:
-            if self._arity[name] != len(args):
-                raise QTypeError('QType "%s" requires %d arguments,'
-                                 ' received %d.'
-                                % (name, self._arity[name], len(args)))
-        except KeyError:
-            raise QTypeError('"%s" is not a declared qtype.' % name)
-
-        self._name = name
-        self._args = args
-
-    @property
-    def atoms(self):
-        result = set()
-        if len(self._args) == 0:
-            result.add(self)
-        for arg in self.args:
-            result.update(arg.atoms)
-        return result
-        
-    @property
-    def is_variable(self):
-        return False
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def args(self):
-        return self._args
-
+class Constant(Atom):
     def substitute(self, a, b):
-        args = [ arg.substitute(a, b) for arg in self.args ]
-        if args != self.args:
-            return QType(self.name, args)
-        else:
-            return self
+        return self
 
-    def unify(self, other):
-        return unify([other, self])
-    
+class Polymorphic(object):
+    def __init__(self, name, args):
+        self._name = name
+        self._args = tuple(args)
+
     def __repr__(self):
         if self.name == 'fun':
             return '(%s->%s)' % (str(self.args[0]), str(self.args[1]))
-        elif self.name in ['obj', 'bool']:
-            return self.name
         else:
             return NotImplemented
 
@@ -175,20 +95,42 @@ class QType(object):
         return not self == other
 
     def __hash__(self):
-        result = 0
-        for arg in self.args:
-            result = result ^ hash(arg)
-        
-        return result ^ hash(self.name)
+        return hash(self.__class__) ^ hash(self.name) ^ hash(self.args)
 
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def args(self):
+        return self._args
+
+    def atoms(self):
+        result = set()
+        for arg in self.args:
+            result.update(arg.atoms())
+        return result
+    
+    def substitute(self, a, b):
+        args = [ arg.substitute(a, b) for arg in self.args ]
+        if args != self.args:
+            return Polymorphic(self.name, args)
+        else:
+            return self
+
+        
 def qobj():
-    return QType('obj', [])
+    return Constant('obj')
 
 def qbool():
-    return QType('bool', [])
+    return Constant('bool')
 
 def qfun(a, b):
-    return QType('fun', [a, b])
+    return Polymorphic('fun', [a, b])
 
+_variable_index = 0
 def qvar():
-    return QTypeVariable()
+    global _variable_index
+    index = _variable_index
+    _variable_index += 1
+    return Variable('?v%d' % index)

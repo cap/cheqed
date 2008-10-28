@@ -153,7 +153,7 @@ class TermTypeUnifier:
         for name, atoms in atoms_by_name.iteritems():
             if len(atoms) > 1:
                 try:
-                    self.unifier.add_types([atom.qtype for atom in atoms])
+                    self.unifier.unify_many([atom.qtype for atom in atoms])
                 except unification.UnificationError:
                     msg = 'Cannot unify types for atoms %s.' \
                         % ' and '.join([str(atom) for atom in atoms])
@@ -299,7 +299,7 @@ def build_constant(name, qtype_):
     return Constant(name, qtype_)
 
 def build_combination(operator, operand):
-    if operator.qtype.is_variable:
+    if qtype.is_variable(operator.qtype):
         operator = substitute_type(operator,
                                    qtype.qfun(operand.qtype, qtype.qvar()),
                                    operator.qtype)
@@ -308,7 +308,7 @@ def build_combination(operator, operand):
         raise TypeError('operators must be functions')
 
     unifier = qtype.TypeUnifier()
-    unifier.add_types([operator.qtype.args[0], operand.qtype])
+    unifier.unify(operator.qtype.args[0], operand.qtype)
     for key, value in unifier.get_substitutions().iteritems():
         operator = substitute_type(operator, value, key)
         operand = substitute_type(operand, value, key)

@@ -41,7 +41,7 @@ class TestParse:
             assert self.parser.parse_type(string) == obj
 
     def test_parse_variable_type(self):
-        assert isinstance(self.parser.parse_type('?a'), qtype.QTypeVariable)
+        assert qtype.is_variable(self.parser.parse_type('?a'))
 
         fun = self.parser.parse_type('?a->?a')
         assert fun.args[0] == fun.args[1]
@@ -56,7 +56,7 @@ class TestParse:
     def test_parse_untyped_variable(self):
         var = self.parser.parse('var')
         assert var.name == 'var'
-        assert var.qtype.is_variable
+        assert qtype.is_variable(var.qtype)
 
     def test_parse_typed_variable(self):
         var = self.parser.parse('var:bool')
