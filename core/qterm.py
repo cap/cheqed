@@ -62,24 +62,6 @@ def is_atom(term):
 def is_term(term):
     return is_atom(term) or is_combination(term) or is_abstraction(term)
 
-def free_variables(term):
-    if is_constant(term):
-        return set()
-    elif is_variable(term):
-        return set([term])
-    elif is_combination(term):
-        return free_variables(term.operator) | free_variables(term.operand)
-    elif is_abstraction(term):
-        return free_variables(term.body) - set([term.bound])
-
-def atoms(term):
-    if is_atom(term):
-        return set([term])
-    elif is_combination(term):
-        return atoms(term.operator) | atoms(term.operand)
-    elif is_abstraction(term):
-        return atoms(term.body) | set([term.bound])
-
 def by_name(atoms):
     by_name = {}
     for atom in atoms:
@@ -105,13 +87,13 @@ def substitute(term, a, b):
         return beta_reduce(Combination(substitute(term.operator, a, b),
                                        substitute(term.operand, a, b)))
     elif is_abstraction(term):
-        if term.bound in free_variables(b):
+        if term.bound in b.free_variables():
             return term
         bound = term.bound
         body = term.body
-        a_names = set([var.name for var in free_variables(a)])
+        a_names = set([var.name for var in a.free_variables()])
         if bound.name in a_names:
-            names = set([var.name for var in atoms(body)]) \
+            names = set([var.name for var in body.atoms()]) \
                 | a_names
             new_name = bound.name
             i = 1
@@ -182,17 +164,26 @@ class Atom(object):
     def __hash__(self):
         return hash(self.__class__) ^ hash(self.name) ^ hash(self.qtype)
 
-    
+    def atoms(self):
+        return set([self])
+
+
 class Constant(Atom):
     def __repr__(self):
         return 'Constant(%r, %r)' % (self.name, self.qtype)
-
     
+    def free_variables(self):
+        return set()
+
+
 class Variable(Atom):
     def __repr__(self):
         return 'Variable(%r, %r)' % (self.name, self.qtype)
 
-    
+    def free_variables(self):
+        return set([self])
+
+
 class Combination(object):
     def __init__(self, operator, operand):
         self._operator = operator
@@ -223,6 +214,13 @@ class Combination(object):
 
     def __hash__(self):
         return hash(self.__class__) ^ hash(self.operator) ^ hash(self.operand)
+
+    def atoms(self):
+        return self.operator.atoms() | self.operand.atoms()
+
+    def free_variables(self):
+        return self.operator.free_variables() | self.operand.free_variables()
+
     
 class Abstraction(object):
     def __init__(self, bound, body):
@@ -257,3 +255,10 @@ class Abstraction(object):
 
     def __hash__(self):
         return hash(self.__class__) ^ hash(self.bound) ^ hash(self.body)
+
+    def atoms(self):
+        return self.body.atoms() | set([self.bound])
+
+    def free_variables(self):
+        return self.body.free_variables() - set([self.bound])
+

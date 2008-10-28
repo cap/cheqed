@@ -80,7 +80,6 @@ class Environment:
             'sequent': sequent.Sequent,
 
             'substitute': qterm.substitute,
-            'free_variables': qterm.free_variables,
 
             'is_constant': qterm.is_constant,
             'is_variable': qterm.is_variable,

@@ -1,5 +1,5 @@
 from cheqed.core.qtype_unifier import TypeUnifier
-from cheqed.core.qterm import free_variables, substitute_type, by_name
+from cheqed.core.qterm import substitute_type, by_name
 
 class TermTypeUnifier:
     '''Unify the types of free variables.
@@ -13,7 +13,7 @@ class TermTypeUnifier:
 
     def add_terms(self, terms):
         all_frees = set()
-        for term_frees in (free_variables(term) for term in terms):
+        for term_frees in (term.free_variables() for term in terms):
             all_frees.update(term_frees)
 
         for frees in by_name(all_frees).values():
