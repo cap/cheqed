@@ -79,8 +79,6 @@ class Environment:
 
             'sequent': sequent.Sequent,
 
-            'substitute': qterm.substitute,
-
             'is_constant': qterm.is_constant,
             'is_variable': qterm.is_variable,
             'is_combination': qterm.is_combination,
@@ -262,7 +260,7 @@ class Environment:
 def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand
     atom, term = unify_types([atom, term])
-    return qterm.substitute(term, value, atom)
+    return term.substitute(value, atom)
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
 def load_modules(*modules):

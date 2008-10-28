@@ -69,41 +69,9 @@ def by_name(atoms):
     return by_name
     
 def validate_substitution(a, b):
-    return
     if a.qtype != b.qtype:
         raise TypeError('cannot substitute term of type %s for term of type %s'
                         % (a.qtype, b.qtype))
-
-def substitute(term, a, b):
-    '''Substitute a for b in term, respecting bound variables.'''
-    validate_substitution(a, b)
-    
-    if is_atom(term):
-        if term == b:
-            return a
-        else:
-            return term
-    elif is_combination(term):
-        return beta_reduce(Combination(substitute(term.operator, a, b),
-                                       substitute(term.operand, a, b)))
-    elif is_abstraction(term):
-        if term.bound in b.free_variables():
-            return term
-        bound = term.bound
-        body = term.body
-        a_names = set([var.name for var in a.free_variables()])
-        if bound.name in a_names:
-            names = set([var.name for var in body.atoms()]) \
-                | a_names
-            new_name = bound.name
-            i = 1
-            while new_name in names:
-                new_name = bound.name + str(i)
-                i += 1
-            new_bound = Variable(new_name, bound.qtype)
-            body = substitute(body, new_bound, bound)
-            bound = new_bound
-        return Abstraction(bound, substitute(body, a, b))
 
 from cheqed.core.unification import UnificationError
 
@@ -120,9 +88,7 @@ def beta_reduce(term):
         return term
     
     if is_abstraction(term.operator):
-        return substitute(term.operator.body,
-                          term.operand,
-                          term.operator.bound)
+        return term.operator.body.substitute(term.operand, term.operator.bound)
     return term
 
 
@@ -152,6 +118,14 @@ class Atom(object):
 
     def atoms(self):
         return set([self])
+
+    def substitute(self, a, b):
+        validate_substitution(a, b)
+    
+        if self == b:
+            return a
+        else:
+            return self
 
 
 class Constant(Atom):
@@ -217,7 +191,12 @@ class Combination(object):
         return Combination(self.operator.substitute_type(a, b),
                            self.operand.substitute_type(a, b))    
     
-    
+    def substitute(self, a, b):
+        validate_substitution(a, b)
+        return beta_reduce(Combination(self.operator.substitute(a, b),
+                                       self.operand.substitute(a, b)))
+
+
 class Abstraction(object):
     def __init__(self, bound, body):
         if not is_variable(bound):
@@ -261,3 +240,25 @@ class Abstraction(object):
     def substitute_type(self, a, b):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))
+
+    def substitute(self, a, b):
+        validate_substitution(a, b)
+        
+        if self.bound in b.free_variables():
+            return self
+
+        bound = self.bound
+        body = self.body
+        a_names = set([var.name for var in a.free_variables()])
+        if bound.name in a_names:
+            names = set([var.name for var in body.atoms()]) \
+                | a_names
+            new_name = bound.name
+            i = 1
+            while new_name in names:
+                new_name = bound.name + str(i)
+                i += 1
+            new_bound = Variable(new_name, bound.qtype)
+            body = body.substitute(new_bound, bound)
+            bound = new_bound
+        return Abstraction(bound, body.substitute(a, b))
