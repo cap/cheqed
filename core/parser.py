@@ -4,7 +4,7 @@ import sys
 import ply.lex as lex
 import ply.yacc as yacc
 
-from cheqed.core import qterm, qtype
+from cheqed.core import qterm, qtype, term_builder
         
 class SyntaxError(Exception):
     pass
@@ -23,7 +23,7 @@ class Parser:
         
     def _make_binary_operator(self):
         def p_binary_operator(p):
-            p[0] = qterm.binary_op(self.syntax[p[2]].constant, p[1], p[3])
+            p[0] = term_builder.binary_op(self.syntax[p[2]].constant, p[1], p[3])
 
         words = [word for word in self.syntax.operators()
                  if word.arity == 2]
@@ -34,7 +34,7 @@ class Parser:
 
     def _make_unary_operator(self):
         def p_unary_operator(p):
-            p[0] = qterm.unary_op(self.syntax[p[1]].constant, p[2])
+            p[0] = term_builder.unary_op(self.syntax[p[1]].constant, p[2])
 
         words = [word for word in self.syntax.operators()
                  if word.arity == 1]
@@ -45,8 +45,8 @@ class Parser:
 
     def _make_binder(self):
         def p_binder(p):
-            p[0] = qterm.unary_op(self.syntax[p[1]].constant,
-                                  qterm.build_abstraction(p[2], p[3]))
+            p[0] = term_builder.unary_op(self.syntax[p[1]].constant,
+                                  term_builder.build_abstraction(p[2], p[3]))
 
         doc = self._make_doc('binder', '%s atom term',
                              self.syntax.binders())
@@ -187,11 +187,11 @@ class Parser:
 
     def p_atom(self, p):
         'atom : IDENT'
-        p[0] = qterm.build_variable(p[1], qtype.qvar())
+        p[0] = term_builder.build_variable(p[1], qtype.qvar())
 
     def p_typed_atom(self, p):
         'atom : IDENT COLON type'
-        p[0] = qterm.build_variable(p[1], p[3])
+        p[0] = term_builder.build_variable(p[1], p[3])
 
     def p_atomic_type_type(self, p):
         'type : atomic_type'
@@ -213,7 +213,7 @@ class Parser:
         
     def p_abstraction(self, p):
         'abstraction : BSLASH atom term'
-        p[0] = qterm.build_abstraction(p[2], p[3])
+        p[0] = term_builder.build_abstraction(p[2], p[3])
 
     def p_arglist_empty(self, p):
         'arglist :'
@@ -233,7 +233,7 @@ class Parser:
         a = p[3]
         a.reverse()
         while a:
-            c = qterm.build_combination(c, a.pop())
+            c = term_builder.build_combination(c, a.pop())
         p[0] = c
 
     def p_error(self, p):

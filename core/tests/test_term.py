@@ -1,7 +1,7 @@
 from nose.tools import assert_true, assert_equal, assert_not_equal, assert_raises
 from py.test import raises
 
-from cheqed.core import environment, qterm, qtype, unification
+from cheqed.core import environment, qterm, term_builder, qtype, unification
 from cheqed.core.qtype import qbool, qobj, qfun, qvar
 from cheqed.core.qterm import Variable, Constant, Abstraction, Combination, free_variables
 from cheqed.core.unification import UnificationError
@@ -261,9 +261,9 @@ class TestUnification:
         x_var = qterm.Variable('x', pq('?a'))
         phi_var = qterm.Constant('phi', pq('?b->bool'))
         phi_obj = qterm.Constant('phi', pq('obj->bool'))
-        combo_var = qterm.build_combination(phi_var, x_var)
-        combo_obj = qterm.build_combination(phi_obj, x_obj)
-        combo_var2 = qterm.build_combination(phi_var, x_obj)
+        combo_var = term_builder.build_combination(phi_var, x_var)
+        combo_obj = term_builder.build_combination(phi_obj, x_obj)
+        combo_var2 = term_builder.build_combination(phi_var, x_obj)
 
         x, combo = qterm.unify_types([x_obj, combo_var])
         assert x == x_obj
@@ -282,8 +282,8 @@ class TestUnification:
         assert combo_b == combo_obj
 
         f = qterm.Variable('f', pq('?x->?y'))
-        raises(UnificationError, qterm.build_combination, f, f)
-        raises(UnificationError, qterm.build_combination, x_var, x_var)
+        raises(UnificationError, term_builder.build_combination, f, f)
+        raises(UnificationError, term_builder.build_combination, x_var, x_var)
         
         
     def test_abstraction(self):
@@ -315,10 +315,10 @@ def test_combination_qtype():
     x_bool = qterm.Constant('x', qbool)
     f_bool_bool = qterm.Constant('f', qtype.qfun(qbool, qbool))
     
-    raises(TypeError, qterm.build_combination, x_obj, x_obj)
-    raises(unification.UnificationError, qterm.build_combination, f_bool_bool, x_obj)
+    raises(TypeError, term_builder.build_combination, x_obj, x_obj)
+    raises(unification.UnificationError, term_builder.build_combination, f_bool_bool, x_obj)
 
-    assert qterm.build_combination(f_bool_bool, x_bool).qtype == qbool
+    assert term_builder.build_combination(f_bool_bool, x_bool).qtype == qbool
 
 def test_abstraction_qtype():
     qobj = qtype.qobj()
@@ -349,7 +349,7 @@ def test_ops():
     qor = qterm.Constant('or', binop)
     qx = qterm.Variable('x', qobj)
 
-    rx = qterm.build_combination(qrel, qx)
+    rx = term_builder.build_combination(qrel, qx)
 
     assert free_variables(rx) == set([qx])
 

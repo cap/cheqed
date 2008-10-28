@@ -80,6 +80,12 @@ def atoms(term):
     elif is_abstraction(term):
         return atoms(term.body) | set([term.bound])
 
+def by_name(atoms):
+    by_name = {}
+    for atom in atoms:
+        by_name.setdefault(atom.name, []).append(atom)
+    return by_name
+    
 def validate_substitution(a, b):
     return
     if a.qtype != b.qtype:
@@ -142,26 +148,24 @@ def types_unify(types):
     return True
 
 class TermTypeUnifier:
+    '''Unify the types of free variables.
+
+    The resultant unifier ensures that all free variables with a given
+    name have the same type.
+    '''
+
     def __init__(self):
         self.unifier = TypeUnifier()
 
     def add_terms(self, terms):
-        atoms_by_name = {}
-        for term in terms:
-            for atom in free_variables(term):
-                if atom.name != '=':
-                    atoms_by_name.setdefault(atom.name, []).append(atom)
+        all_frees = set()
+        for term_frees in (free_variables(term) for term in terms):
+            all_frees.update(term_frees)
 
-        for name, atoms in atoms_by_name.iteritems():
-            if len(atoms) > 1:
-                try:
-                    self.unifier.unify_many([atom.qtype for atom in atoms])
-                except unification.UnificationError:
-                    msg = 'Cannot unify types for atoms %s.' \
-                        % ' and '.join([str(atom) for atom in atoms])
-                    raise unification.UnificationError(msg)
+        for frees in by_name(all_frees).values():
+            self.unifier.unify_many([free.qtype for free in frees])
 
-    def unify(self, term):
+    def apply(self, term):
         for key, value in self.get_substitutions().iteritems():
             term = substitute_type(term, value, key)
         return term
@@ -172,7 +176,7 @@ class TermTypeUnifier:
 def unify_types(terms):
     unifier = TermTypeUnifier()
     unifier.add_terms(terms)
-    return [unifier.unify(term) for term in terms]
+    return [unifier.apply(term) for term in terms]
 
 def beta_reduce(term):
     if not is_combination(term):
@@ -284,47 +288,3 @@ class Abstraction(object):
 
     def __hash__(self):
         return hash(self.__class__) ^ hash(self.bound) ^ hash(self.body)
-
-def unary_op(op, a):
-    return build_combination(op, a)
-
-def binary_op(op, a, b):
-    return build_combination(build_combination(op, a), b)
-
-def binder(op, x, a):
-    return unary_op(op, build_abstraction(x, a))
-
-def build_variable(name, qtype_):
-    return Variable(name, qtype_)
-
-def build_constant(name, qtype_):
-    return Constant(name, qtype_)
-
-def build_combination(operator, operand):
-    if qtype.is_variable(operator.qtype):
-        operator = substitute_type(operator,
-                                   qtype.qfun(operand.qtype, qtype.qvar()),
-                                   operator.qtype)
-
-    if operator.qtype.name != 'fun':
-        raise TypeError('operators must be functions')
-
-    unifier = TypeUnifier()
-    unifier.unify(operator.qtype.args[0], operand.qtype)
-    for key, value in unifier.get_substitutions().iteritems():
-        operator = substitute_type(operator, value, key)
-        operand = substitute_type(operand, value, key)
-
-    operator, operand = unify_types([operator, operand])
-
-    if operator.qtype.args[0] != operand.qtype:
-        raise TypeError('operand type must match operator argument type')
-
-    return Combination(operator, operand)
-
-def build_abstraction(bound, body):
-    bound, body = unify_types([bound, body])
-
-
-    
-    return Abstraction(bound, body)
