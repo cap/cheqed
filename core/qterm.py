@@ -42,6 +42,7 @@ be inferred.
 
 from cheqed.core.unification import Unifier, UnificationError
 from cheqed.core import qtype, unification
+from cheqed.core.qtype_unifier import TypeUnifier
 
 def is_constant(term):
     return isinstance(term, Constant)
@@ -133,15 +134,16 @@ def substitute_type(term, a, b):
 from cheqed.core.unification import UnificationError
 
 def types_unify(types):
+    unifier = TypeUnifier()
     try:
-        qtype.unify(types)
-        return True
+        unifier.unify_many(types)
     except UnificationError:
         return False
+    return True
 
 class TermTypeUnifier:
     def __init__(self):
-        self.unifier = qtype.TypeUnifier()
+        self.unifier = TypeUnifier()
 
     def add_terms(self, terms):
         atoms_by_name = {}
@@ -307,7 +309,7 @@ def build_combination(operator, operand):
     if operator.qtype.name != 'fun':
         raise TypeError('operators must be functions')
 
-    unifier = qtype.TypeUnifier()
+    unifier = TypeUnifier()
     unifier.unify(operator.qtype.args[0], operand.qtype)
     for key, value in unifier.get_substitutions().iteritems():
         operator = substitute_type(operator, value, key)

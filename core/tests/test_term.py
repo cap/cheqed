@@ -4,6 +4,7 @@ from py.test import raises
 from cheqed.core import environment, qterm, qtype, unification
 from cheqed.core.qtype import qbool, qobj, qfun, qvar
 from cheqed.core.qterm import Variable, Constant, Abstraction, Combination, free_variables
+from cheqed.core.unification import UnificationError
 
 
 class TestConstant_:
@@ -281,8 +282,8 @@ class TestUnification:
         assert combo_b == combo_obj
 
         f = qterm.Variable('f', pq('?x->?y'))
-        raises(qtype.UnificationError, qterm.build_combination, f, f)
-        raises(qtype.UnificationError, qterm.build_combination, x_var, x_var)
+        raises(UnificationError, qterm.build_combination, f, f)
+        raises(UnificationError, qterm.build_combination, x_var, x_var)
         
         
     def test_abstraction(self):

@@ -1,17 +1,15 @@
 from nose.tools import assert_true, assert_equal, assert_raises
 
 from cheqed.core.qtype import qvar, qobj, qbool, qfun
-from cheqed.core import qtype
+from cheqed.core.qtype_unifier import unify
+from cheqed.core.unification import UnificationError
 
 def test_str():
-    qobj = qtype.qobj()
-    qbool = qtype.qbool()
-    
-    assert str(qobj) == 'obj'
-    assert str(qbool) == 'bool'
-    assert str(qtype.qfun(qobj, qbool)) == '(obj->bool)'
-    assert str(qtype.qfun(qobj, qbool)) == '(obj->bool)'
-    assert (str(qtype.qfun(qtype.qfun(qobj, qobj), qbool))
+    assert str(qobj()) == 'obj'
+    assert str(qbool()) == 'bool'
+    assert str(qfun(qobj(), qbool())) == '(obj->bool)'
+    assert str(qfun(qobj(), qbool())) == '(obj->bool)'
+    assert (str(qfun(qfun(qobj(), qobj()), qbool()))
             == '((obj->obj)->bool)')
 
 # def test_make_unifier():
@@ -42,10 +40,6 @@ def test_str():
 #     assert uni.apply(fun0) == uni.apply(fun1)
     
 def test_unify():
-    unify = qtype.unify
-    UnificationError = qtype.UnificationError
-    variable = qtype.Variable
-    
     assert_raises(UnificationError, unify, [qobj(), qbool()])
     assert_equal(unify([qobj(), qobj()]), qobj())
     assert_equal(unify([qvar(), qobj()]), qobj())
@@ -72,4 +66,4 @@ def test_unfiy_tricky():
     g1 = qfun(v1, v2)
     g2 = qfun(v2, qobj())
 
-    assert_equal(qtype.unify([g1, g2]), qfun(qobj(), qobj()))
+    assert_equal(unify([g1, g2]), qfun(qobj(), qobj()))
