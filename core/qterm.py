@@ -1,42 +1,27 @@
-'''Represent terms from the typed lambda calculus.
+'''Represent terms in the simply typed lambda calculus.
 
-I've gone back and forth about how to structure the
-representation. Should terms be large objects, with methods to query
-for free variables and perform substutions? Or should they be very
-small value types, with free methods acting upon them?
+I've changed my mind many times on the role and structure of these
+objects.
 
-Large Objects
--------------
+Coming from ML and inspired by HOL, it is tempting to make classes
+very small and write methods which dispatch in the style of pattern
+matching. This has the advantage of grouping code in a very logical
+way: we're more likely to think of substitution on terms rather than
+on a particular type of term. Further, we don't encounter the typical
+problems with this visitor-like pattern; we won't be adding new
+classes to the hierarchy.
 
-Can be consistent with other types of objects: foo.free_variables()
-can work whether foo is a term or a sequent.
+That said, for a small subset of operations, structuring the classes
+pythonically seems to make sense. Why write a new function to dispatch
+on term type, especially for single dispatch, when we already have the
+Python object system?
 
-Much of the type dispatching we need in small objects is taken care of
-by the object system.
-
-Small Objects
--------------
-
-Better code organization: we more often want to think in terms of
-methods rather than objects.
-
-
-Furthermore, what do we do about correctness? It seems a bit heavy to
-do typechecking and inference at construction time. Maybe we just do a
-check, then move inference elsewhere when it is needed?
-
-Although, really, what sort of correctness do we want to guarantee?
-And in what scope? Do we want all variables with the same name to have
-the same type? All variables in the same scope with the same name ... ?
-
-Up to this point, we have, in an ad-hoc way, forced all variables with
-the same name in a particular sequent to have the same
-type. Introducing a new instance of an existing variable with the
-wrong type leads to a unification error. That said, introducing a new
-instance of an existing variable with a variable type causes type
-inference to assign a type to that variable, insofar as its type can
-be inferred.
-
+I think the clinching factor is that there are very few things that we
+want to do which involve just the objects themselves. Substitution is
+really a method for building a new term from an old one. The term
+construction process contains more nuance than belongs in a simple
+constructor, and so substitution cannot be written as an instance
+method without introducing a truly nasty dependency graph.
 
 '''
 
@@ -65,20 +50,13 @@ def by_name(atoms):
     for atom in atoms:
         by_name.setdefault(atom.name, []).append(atom)
     return by_name
-    
+
 def validate_substitution(a, b):
     if a.qtype != b.qtype:
         raise TypeError('cannot substitute term of type %s for term of type %s'
                         % (a.qtype, b.qtype))
 
 
-def beta_reduce(term):
-    if not is_combination(term):
-        return term
-    
-    if is_abstraction(term.operator):
-        return term.operator.body.substitute(term.operand, term.operator.bound)
-    return term
 
 
 class Atom(object):
@@ -107,14 +85,6 @@ class Atom(object):
 
     def atoms(self):
         return set([self])
-
-    def substitute(self, a, b):
-        validate_substitution(a, b)
-    
-        if self == b:
-            return a
-        else:
-            return self
 
 
 class Constant(Atom):
@@ -185,11 +155,6 @@ class Combination(object):
     def substitute_type(self, a, b):
         return Combination(self.operator.substitute_type(a, b),
                            self.operand.substitute_type(a, b))    
-    
-    def substitute(self, a, b):
-        validate_substitution(a, b)
-        return beta_reduce(Combination(self.operator.substitute(a, b),
-                                       self.operand.substitute(a, b)))
 
 
 class Abstraction(object):
@@ -235,25 +200,3 @@ class Abstraction(object):
     def substitute_type(self, a, b):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))
-
-    def substitute(self, a, b):
-        validate_substitution(a, b)
-        
-        if self.bound in b.free_variables():
-            return self
-
-        bound = self.bound
-        body = self.body
-        a_names = set([var.name for var in a.free_variables()])
-        if bound.name in a_names:
-            names = set([var.name for var in body.atoms()]) \
-                | a_names
-            new_name = bound.name
-            i = 1
-            while new_name in names:
-                new_name = bound.name + str(i)
-                i += 1
-            new_bound = Variable(new_name, bound.qtype)
-            body = body.substitute(new_bound, bound)
-            bound = new_bound
-        return Abstraction(bound, body.substitute(a, b))

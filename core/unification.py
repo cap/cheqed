@@ -29,7 +29,7 @@ class Unifier:
             keep = index_a
             discard = index_b
         elif rep_a != rep_b:
-            raise UnificationError('foo')
+            raise UnificationError('cannot unify %r and %r' % (rep_a, rep_b))
         else:
             return
 

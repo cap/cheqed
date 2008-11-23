@@ -1,4 +1,4 @@
-from cheqed.core import qtype, qterm, unification
+from cheqed.core import qtype, qterm, unification, substitution, term_builder
 
 def match_unary_op(term):
     return (term.operator,
@@ -68,10 +68,12 @@ class Printer(object):
         raise TypeError
 
     def print_separation(self, term):
-        bound, predicate = match_separation(term)
-        pretty_predicate = beta_reduce(qterm.unary_op(predicate, bound))
-        return '{ %s | %s }' % (self.print_atom(bound),
-                                self.print_combination(pretty_predicate))
+        superset, predicate = match_separation(term)
+        bound = term_builder.build_variable('x', qtype.qvar())
+        pretty_predicate = substitution.beta_reduce(term_builder.unary_op(predicate, bound))
+        return '{ %s in %s | %s }' % (self.print_atom(bound),
+                                      self.print_term(superset),
+                                      self.print_combination(pretty_predicate))
     
     def print_function(self, combination):
         def uncurry(term):

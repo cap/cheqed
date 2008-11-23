@@ -17,7 +17,7 @@ def definition_add(request):
 
 def proof_start(request):
     goal_text = request.POST['goal']
-    goal_term = env.parse(str(goal_text))
+    goal_term = env.parse(str(goal_text).strip())
     goal_seq = sequent.Sequent([], [goal_term])
 
     p = Plan()

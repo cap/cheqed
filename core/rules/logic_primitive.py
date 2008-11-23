@@ -51,7 +51,7 @@ def right_disjunction(goal):
 @applicable(lambda goal: match(goal.left[0], 'for_all x . phi'))
 def left_universal(goal, witness):
     match_ = match(goal.left[0], 'for_all x . phi')
-    return [sequent([substitute(match_['phi'], witness, match_['x'])]
+    return [sequent([substitute(witness, match_['x'], match_['phi'])]
                     + goal.left,
                     goal.right)]
 
@@ -67,7 +67,7 @@ def right_universal(goal, witness):
                                            % (witness, goal.right[0]))
 
     return [sequent(goal.left,
-                    [substitute(match_['phi'], witness, match_['x'])]
+                    [substitute(witness, match_['x'], match_['phi'])]
                     + goal.right[1:])]
 
 @primitive
@@ -75,14 +75,14 @@ def right_universal(goal, witness):
 @applicable(lambda goal: match(goal.left[0], 'schema phi . psi'))
 def left_schema(goal, witness):
     match_ = match(goal.left[0], 'schema phi . psi')
-    return [sequent([substitute(match_['psi'], witness, match_['phi'])]
+    return [sequent([substitute(witness, match_['phi'], match_['psi'])]
                     + goal.left,
                     goal.right)]
 
 @primitive
 def left_substitution(goal):
     match_ = match(goal.left[1], 'a = b')
-    return [sequent(([substitute(goal.left[0], match_['b'], match_['a'])]
+    return [sequent(([substitute(match_['b'], match_['a'], goal.left[0])]
                      + goal.left[1:]),
                     goal.right)]
 
@@ -90,7 +90,7 @@ def left_substitution(goal):
 def right_substitution(goal):
     match_ = match(goal.left[0], 'a = b')
     return [sequent(goal.left,
-                    ([substitute(goal.right[0], match_['b'], match_['a'])]
+                    ([substitute(match_['b'], match_['a'], goal.right[0])]
                      + goal.right[1:]))]
 
 @primitive

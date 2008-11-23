@@ -5,6 +5,7 @@ from cheqed.core import trace
 from cheqed.core.match import match_term
 from cheqed.core.qterm import is_term
 from cheqed.core.term_type_unifier import unify_types
+from cheqed.core import substitution
 
 def arg_types(*args):
     def assign_types(rule):
@@ -76,6 +77,8 @@ class Environment:
             'applicable': applicable,
             'arg_types': arg_types,
             'match': self.match,
+
+            'substitute': substitution.substitute,
 
             'sequent': sequent.Sequent,
 
@@ -260,7 +263,7 @@ class Environment:
 def expand_definition(term, definition):
     atom, value = definition.operator.operand, definition.operand
     atom, term = unify_types([atom, term])
-    return term.substitute(value, atom)
+    return substitution.substitute(value, atom, term)
 
 theory_root = '/home/cap/thesis/cheqed/core/theory'
 def load_modules(*modules):

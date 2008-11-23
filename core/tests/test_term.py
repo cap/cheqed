@@ -149,24 +149,3 @@ class TestAbstraction:
         assert_equal(Abstraction(Variable('a', type_a()),
                                  Variable('a', type_b())).free_variables(),
                      set([Variable('a', type_b())]))
-
-
-class TestAbstraction____:
-    def test_substitute(self):
-        x = Variable('x', qobj())
-        y = Variable('y', qobj())
-        phi = Variable('phi', qfun(qobj(), qbool()))
-        phi_y = Combination(phi, y)
-        a = Abstraction(x, phi_y)
-        b = a.substitute(x, y)
-        assert b.bound != x
-
-# def test_substitute():
-#     term = pt(r'for_all x . (x in a)')
-#     x = pt(r'x:obj')
-#     b = pt(r'b:obj')
-
-#     result = term.substitute(b, x)
-
-#     assert result == term
-

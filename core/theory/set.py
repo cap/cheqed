@@ -22,8 +22,10 @@ axiom('set.family_union',
       r'(x in family_union(F)) iff (exists y . (y in F) and (x in y))')
 
 axiom('set.separation',
-      r'schema phi . for_all x . for_all y .'
-      r'(y in separation(x, phi)) iff ((y in x) and phi(y))')
+      r'schema phi . for_all X . for_all y .'
+      r'(y in separation(X, phi)) iff ((y in X) and phi(y))')
+
+# y in { x | x in X and phi } iff (y in X and s/y/x/phi)
 
 axiom('set.infinity',
       r'exists x . (emptyset in x) and '
@@ -40,21 +42,8 @@ definition(r'successor = (\x . union(x, singleton(x)))')
 
 definition(r'(subset) = (\x \y . for_all z . (z in x) implies (z in y))')
 
-definition(r'ordered_pair = (\x \y unordered_pair(x, unordered_pair(x, y)))')
+definition(r'ordered_pair = (\x \y unordered_pair(singleton(x), unordered_pair(x, y)))')
 
-definition(r'is_ordered_pair = (\x \y . exists z . z = ordered_pair(x, y))')
+definition(r'is_in_ordered_pair_first = (\x \y . exists z . (singleton(z) in x) and (y in z))')
 
-definition(r'is_ordered_pair_first'
-           r'= (\x \y . is_ordered_pair(x) and (y in x))')
-
-definition(r'is_ordered_pair_second'
-           r'= (\x \y . is_ordered_pair(x)'
-           r'and (exists z . unordered_pair(y, z) in x))')
-
-definition(r'ordered_pair_first ='
-           r'(\x . separation(x, is_ordered_pair_first(x)))')
-
-definition(r'ordered_pair_second ='
-           r'(\x . separation(x, is_ordered_pair_second(x)))')
-
-definition(r'em = \x . x or not x')
+definition(r'ordered_pair_first = (\x . separation(y, is_in_ordered_pair_first(x)))')

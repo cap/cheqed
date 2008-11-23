@@ -1,17 +1,19 @@
 from cheqed.core import qterm
 from cheqed.core.term_type_unifier import unify_types
 
-class Sequent:
+class Sequent(object):
     def __init__(self, left=[], right=[]):
-        self.left, self.right = self.infer_types(left[:], right[:])
+        self._left, self._right = self.infer_types(left[:], right[:])
+        self._left = list(self._left)
+        self._right = list(self._right)
 
-    def __getitem__(self, key):
-        if key == 'left':
-            return self.left
-        elif key == 'right':
-            return self.right
-        else:
-            raise KeyError
+    @property
+    def left(self):
+        return self._left
+
+    @property
+    def right(self):
+        return self._right
 
     @staticmethod
     def infer_types(left, right):
@@ -31,6 +33,7 @@ class Sequent:
                 and self.right == other.right)
 
     def free_variables(self):
-        return reduce(lambda x, y: x.union(y),
-                      map(lambda f: qterm.free_variables(f),
-                          self.left + self.right))
+        free = set()
+        for term in self.left + self.right:
+            free.update(term.free_variables())
+        return free
