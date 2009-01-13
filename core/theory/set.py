@@ -6,8 +6,8 @@ operator('subset', 2, 'left', 50)
 
 # axioms
 axiom('set.extensionality',
-      r'(for_all x . for_all y . for_all z .'
-      r'((z in x) iff (z in y))) implies (x = y)')
+      r'for_all x . for_all y .'
+      r'(for_all z . (z in x) iff (z in y)) implies (x = y)')
 
 axiom('set.unordered_pair',
       r'for_all x . for_all y . for_all z .'

@@ -4,8 +4,8 @@ import sys
 import ply.lex as lex
 import ply.yacc as yacc
 
-from cheqed.core import qterm, qtype, term_builder
-        
+from cheqed.core import qterm, qtype
+
 class SyntaxError(Exception):
     pass
 
@@ -13,74 +13,7 @@ class PrecedenceError(Exception):
     pass
 
 class Parser:
-    def _make_doc(self, nonterminal, pattern, words):
-        if len(words) > 0:
-            tokens = [word.token for word in words]
-            productions = '\n| '.join([pattern % tok for tok in tokens])
-            return '%s : %s' % (nonterminal, productions)
-        else:
-            return '%s : NEVERMATCH' % nonterminal
-        
-    def _make_binary_operator(self):
-        def p_binary_operator(p):
-            p[0] = term_builder.binary_op(self.syntax[p[2]].constant, p[1], p[3])
-
-        words = [word for word in self.syntax.operators()
-                 if word.arity == 2]
-        
-        doc = self._make_doc('binary_operator', 'term %s term', words)
-        p_binary_operator.__doc__ = doc
-        self.p_binary_operator = p_binary_operator
-
-    def _make_unary_operator(self):
-        def p_unary_operator(p):
-            p[0] = term_builder.unary_op(self.syntax[p[1]].constant, p[2])
-
-        words = [word for word in self.syntax.operators()
-                 if word.arity == 1]
-        
-        doc = self._make_doc('unary_operator', '%s term', words)
-        p_unary_operator.__doc__ = doc
-        self.p_unary_operator = p_unary_operator
-
-    def _make_binder(self):
-        def p_binder(p):
-            p[0] = term_builder.unary_op(self.syntax[p[1]].constant,
-                                  term_builder.build_abstraction(p[2], p[3]))
-
-        doc = self._make_doc('binder', '%s atom term',
-                             self.syntax.binders())
-        p_binder.__doc__ = doc
-        self.p_binder = p_binder
-
-    def _make_prefix_constants(self):
-        def p_prefix_constant(p):
-            p[0] = self.syntax[p[2]].constant
-            
-        doc = self._make_doc('prefix_constant', 'LPAREN %s RPAREN',
-                             self.syntax.words())
-        p_prefix_constant.__doc__ = doc
-        self.p_prefix_constant = p_prefix_constant
-
-    def _make_atomic_type(self):
-        def p_atomic_type(p):
-            p[0] = self.syntax[p[1]].constructor()
-
-        doc = self._make_doc('atomic_type', '%s', self.syntax.types())
-        p_atomic_type.__doc__ = doc
-        self.p_atomic_type = p_atomic_type
-
-    @staticmethod
-    def check_associativities(entry, token):
-        if entry[0] != token[1]:
-            message = ('Tokens at the same precedence level must have the'
-                       ' same associativities. %s and %s have precedence'
-                       ' %d but associativities %s and %s.'
-                       % (entry[1], token[2], token[0],
-                          entry[0], token[1]))
-            raise PrecedenceError(message)
-        
-    def __init__(self, syntax, quiet=True):
+    def __init__(self, syntax, term_builder, quiet=True):
         self.tokens = [
             'LPAREN', 'RPAREN',
             'COMMA',
@@ -94,6 +27,7 @@ class Parser:
             ]
 
         self.syntax = syntax
+        self.term_builder = term_builder
 
         self._make_atomic_type()
         self._make_unary_operator()
@@ -138,6 +72,75 @@ class Parser:
         finally:
             if quiet:
                 sys.stderr = stderr
+
+    
+    def _make_doc(self, nonterminal, pattern, words):
+        if len(words) > 0:
+            tokens = [word.token for word in words]
+            productions = '\n| '.join([pattern % tok for tok in tokens])
+            return '%s : %s' % (nonterminal, productions)
+        else:
+            return '%s : NEVERMATCH' % nonterminal
+        
+    def _make_binary_operator(self):
+        def p_binary_operator(p):
+            p[0] = self.term_builder.build_binary_op(self.syntax[p[2]].constant, p[1], p[3])
+
+        words = [word for word in self.syntax.operators()
+                 if word.arity == 2]
+        
+        doc = self._make_doc('binary_operator', 'term %s term', words)
+        p_binary_operator.__doc__ = doc
+        self.p_binary_operator = p_binary_operator
+
+    def _make_unary_operator(self):
+        def p_unary_operator(p):
+            p[0] = self.term_builder.build_combination(self.syntax[p[1]].constant, p[2])
+
+        words = [word for word in self.syntax.operators()
+                 if word.arity == 1]
+        
+        doc = self._make_doc('unary_operator', '%s term', words)
+        p_unary_operator.__doc__ = doc
+        self.p_unary_operator = p_unary_operator
+
+    def _make_binder(self):
+        def p_binder(p):
+            p[0] = self.term_builder.build_combination(self.syntax[p[1]].constant,
+                                  self.term_builder.build_abstraction(p[2], p[3]))
+
+        doc = self._make_doc('binder', '%s atom term',
+                             self.syntax.binders())
+        p_binder.__doc__ = doc
+        self.p_binder = p_binder
+
+    def _make_prefix_constants(self):
+        def p_prefix_constant(p):
+            p[0] = self.syntax[p[2]].constant
+            
+        doc = self._make_doc('prefix_constant', 'LPAREN %s RPAREN',
+                             self.syntax.words())
+        p_prefix_constant.__doc__ = doc
+        self.p_prefix_constant = p_prefix_constant
+
+    def _make_atomic_type(self):
+        def p_atomic_type(p):
+            p[0] = self.syntax[p[1]].constructor()
+
+        doc = self._make_doc('atomic_type', '%s', self.syntax.types())
+        p_atomic_type.__doc__ = doc
+        self.p_atomic_type = p_atomic_type
+
+    @staticmethod
+    def check_associativities(entry, token):
+        if entry[0] != token[1]:
+            message = ('Tokens at the same precedence level must have the'
+                       ' same associativities. %s and %s have precedence'
+                       ' %d but associativities %s and %s.'
+                       % (entry[1], token[2], token[0],
+                          entry[0], token[1]))
+            raise PrecedenceError(message)
+        
 
     t_QMARK = r'\?'
     t_DOT = r'\.'
@@ -187,11 +190,11 @@ class Parser:
 
     def p_atom(self, p):
         'atom : IDENT'
-        p[0] = term_builder.build_variable(p[1], qtype.qvar())
+        p[0] = self.term_builder.build_variable(p[1], qtype.qvar())
 
     def p_typed_atom(self, p):
         'atom : IDENT COLON type'
-        p[0] = term_builder.build_variable(p[1], p[3])
+        p[0] = self.term_builder.build_variable(p[1], p[3])
 
     def p_atomic_type_type(self, p):
         'type : atomic_type'
@@ -213,7 +216,7 @@ class Parser:
         
     def p_abstraction(self, p):
         'abstraction : BSLASH atom term'
-        p[0] = term_builder.build_abstraction(p[2], p[3])
+        p[0] = self.term_builder.build_abstraction(p[2], p[3])
 
     def p_arglist_empty(self, p):
         'arglist :'
@@ -233,7 +236,7 @@ class Parser:
         a = p[3]
         a.reverse()
         while a:
-            c = term_builder.build_combination(c, a.pop())
+            c = self.term_builder.build_combination(c, a.pop())
         p[0] = c
 
     def p_error(self, p):

@@ -57,8 +57,6 @@ def validate_substitution(a, b):
                         % (a.qtype, b.qtype))
 
 
-
-
 class Atom(object):
     def __init__(self, name, qtype_):
         self._name = name
@@ -172,11 +170,11 @@ class Abstraction(object):
     @property
     def body(self):
         return self._body
-        
+
     @property
     def qtype(self):
         return qtype.qfun(self.bound.qtype, self.body.qtype)
-    
+
     def __repr__(self):
         return 'Abstraction(%r, %r)' % (self.bound, self.body)
 
@@ -200,3 +198,4 @@ class Abstraction(object):
     def substitute_type(self, a, b):
         return Abstraction(self.bound.substitute_type(a, b),
                            self.body.substitute_type(a, b))
+

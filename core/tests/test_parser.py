@@ -24,7 +24,7 @@ class TestParse:
             Operator(cls.equals, 2, 'left', 200),
             ]
             
-        cls.parser = parser.Parser(Syntax(extensions))
+        cls.parser = parser.Parser(Syntax(extensions), term_builder)
 
     def test_parse_constant_type(self):
         matches = [
@@ -69,17 +69,17 @@ class TestParse:
 
     def test_parse_operator(self):
         assert (self.parser.parse('not a')
-                == term_builder.unary_op(self.not_,
+                == term_builder.build_combination(self.not_,
                                    qterm.Variable('a', qbool())))
         
         assert (self.parser.parse('a:obj = b:obj')
-                == term_builder.binary_op(self.equals,
+                == term_builder.build_binary_op(self.equals,
                                    qterm.Variable('a', qobj()),
                                    qterm.Variable('b', qobj())))
 
     def test_parse_binder(self):
         assert (self.parser.parse('for_all x phi')
-                == term_builder.binder(self.for_all,
+                == term_builder.build_binder(self.for_all,
                                 qterm.Variable('x', qobj()),
                                 qterm.Variable('phi', qbool())))
 
@@ -92,13 +92,13 @@ class TestParse:
         y = qterm.Variable('y', qobj())
 
         assert_equal(self.parser.parse('f:obj->obj(x)'),
-                     term_builder.unary_op(f, x))
+                     term_builder.build_combination(f, x))
         
         assert (self.parser.parse('f:obj->obj(g:obj->obj(x))')
-                == term_builder.unary_op(f, term_builder.unary_op(g, x)))
+                == term_builder.build_combination(f, term_builder.build_combination(g, x)))
 
         assert (self.parser.parse('h:obj->obj->obj(x, y)')
-                == term_builder.binary_op(h, x, y))
+                == term_builder.build_binary_op(h, x, y))
 
     def test_parse_abstraction(self):
         f = qterm.Variable('f', qfun(qbool(), qbool()))

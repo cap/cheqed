@@ -6,6 +6,7 @@ from cheqed.core.match import match_term
 from cheqed.core.qterm import is_term
 from cheqed.core.term_type_unifier import unify_types
 from cheqed.core import substitution
+import term_builder
 
 def arg_types(*args):
     def assign_types(rule):
@@ -208,7 +209,7 @@ class Environment:
         
     def make_parser(self):
         extensions = self.types + self.operators + self.binders
-        self.parser = parser.Parser(syntax.Syntax(extensions))
+        self.parser = parser.Parser(syntax.Syntax(extensions), term_builder)
 
     def make_printer(self):
         extensions = self.types + self.operators + self.binders
