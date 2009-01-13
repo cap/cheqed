@@ -10,9 +10,16 @@ from cheqed.core import environment, sequent, trace
 from models import Plan, Proof, Definition
 
 env = environment.make_default()
+for definition in Definition.objects.all():
+    env.add_definition(definition.text)
 
 def definition_add(request):
-    env.add_definition(str(request.POST['definition']))
+    definition = Definition()
+    definition.text = str(request.POST['definition'])
+
+    env.add_definition(definition.text)
+    definition.save()
+    
     return HttpResponseRedirect(reverse(index))
 
 def proof_start(request):
